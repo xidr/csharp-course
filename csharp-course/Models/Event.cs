@@ -1,6 +1,6 @@
 using System.ComponentModel.DataAnnotations;
 
-namespace csharp_course.Models;
+namespace csharp_course;
 
 public class Event
 {
@@ -10,16 +10,16 @@ public class Event
     public DateTime StartAt { get; private set; }
     public DateTime EndAt { get; private set; }
 
-    public Event(string title, DateTime startAt, DateTime endAt, string description = "")
+    public Event(Guid id, string title, DateTime startAt, DateTime endAt, string description = "")
     {
-        Id = Guid.NewGuid();
+        Id = id;
         Title = title;
         Description = description;
         StartAt = startAt;
         EndAt = endAt;
     }
 
-    public void ChangeEvent(string title, DateTime startAt, DateTime endAt, string description = "")
+    public void UpdateEvent(string title, DateTime startAt, DateTime endAt, string description = "")
     {
         
         Title = title;

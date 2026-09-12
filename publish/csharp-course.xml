@@ -1,0 +1,165 @@
+<?xml version="1.0"?>
+<doc>
+    <assembly>
+        <name>csharp-course</name>
+    </assembly>
+    <members>
+        <member name="T:csharp_course.EventsController">
+            <summary>
+            Контроллер для управления событиями
+            </summary>
+        </member>
+        <member name="M:csharp_course.EventsController.GetAllEvents">
+            <summary>
+            Метод возвращает все события
+            </summary>
+            <response code="200">Возвращается JSON-структура с деталями ответа
+            и HTTP статус-кодом 200 Ok в случае успеха</response>
+        </member>
+        <member name="M:csharp_course.EventsController.GetEventByIndex(System.Guid)">
+            <summary>
+            Метод возвращает событие по идентификатору
+            </summary>
+            <param name="index">Идентификатор события</param>
+            <response code="200">Возвращается JSON-структура ApiResult с деталями ответа
+            и HTTP статус-кодом 200 Ok в случае успеха</response>
+            <response code="404">Возвращается HTTP статус код 404 Not Found в случае
+            отсутствия события</response>
+        </member>
+        <member name="M:csharp_course.EventsController.Post(csharp_course.EventDto)">
+            <summary>
+            Метод создает новое событие
+            </summary>
+            <param name="eventDto">Данные создаваемого события</param>
+            <response code="201">Возвращается JSON-структура с идентификатором созданного события
+            и HTTP статус-кодом 201 Created в случае успеха</response>
+            <response code="400">Возвращается HTTP статус-код 400 Bad Request в случае
+            некорректных входных данных</response>
+        </member>
+        <member name="M:csharp_course.EventsController.Put(System.Guid,csharp_course.EventDto)">
+            <summary>
+            Метод обновляет существующее событие по идентификатору
+            </summary>
+            <param name="index">Идентификатор события</param>
+            <param name="eventDto">Новые данные события</param>
+            <response code="204">Возвращается HTTP статус-код 204 No Content в случае
+            успешного обновления события</response>
+            <response code="400">Возвращается HTTP статус-код 400 Bad Request в случае
+            некорректных входных данных</response>
+            <response code="404">Возвращается HTTP статус-код 404 Not Found в случае
+            отсутствия события</response>
+        </member>
+        <member name="M:csharp_course.EventsController.Delete(System.Guid)">
+            <summary>
+            Метод удаляет событие по идентификатору
+            </summary>
+            <param name="index">Идентификатор события</param>
+            <response code="200">Возвращается JSON-структура с подтверждением удаления
+            и HTTP статус-кодом 200 OK в случае успеха</response>
+            <response code="404">Возвращается HTTP статус-код 404 Not Found в случае
+            отсутствия события</response>
+        </member>
+        <member name="T:csharp_course.Event">
+            <summary>
+            Модель события
+            </summary>
+        </member>
+        <member name="P:csharp_course.Event.Id">
+            <summary>
+            Уникальный идентификатор события
+            </summary>
+        </member>
+        <member name="P:csharp_course.Event.Title">
+            <summary>
+            Название события
+            </summary>
+        </member>
+        <member name="P:csharp_course.Event.Description">
+            <summary>
+            Описание события
+            </summary>
+        </member>
+        <member name="P:csharp_course.Event.StartAt">
+            <summary>
+            Дата и время начала события
+            </summary>
+        </member>
+        <member name="P:csharp_course.Event.EndAt">
+            <summary>
+            Дата и время окончания события
+            </summary>
+        </member>
+        <member name="T:csharp_course.EventDto">
+            <summary>
+            DTO для создания и обновления события
+            </summary>
+        </member>
+        <member name="P:csharp_course.EventDto.Title">
+            <summary>
+            Название мероприятия
+            </summary>
+        </member>
+        <member name="P:csharp_course.EventDto.Description">
+            <summary>
+            Описание мероприятия
+            </summary>
+        </member>
+        <member name="P:csharp_course.EventDto.StartAt">
+            <summary>
+            Дата и время начала мероприятия
+            </summary>
+        </member>
+        <member name="P:csharp_course.EventDto.EndAt">
+            <summary>
+            Дата и время завершения мероприятия
+            </summary>
+        </member>
+        <member name="T:csharp_course.ApiResult`1">
+            <summary>
+            Класс ApiResult с возвращаемыми данными
+            </summary>
+            <typeparam name="T">Тип возвращаемых данных</typeparam>
+        </member>
+        <member name="P:csharp_course.ApiResult`1.Data">
+            <summary>
+            Возвращаемые данные метода
+            </summary>
+        </member>
+        <member name="T:csharp_course.ApiResult">
+            <summary>
+            Класс ApiResult без возвращаемых данных
+            </summary>
+        </member>
+        <member name="T:csharp_course.ApiBaseResult">
+            <summary>
+            Базовый класс с основными возвращаемыми параметрами
+            </summary>
+        </member>
+        <member name="P:csharp_course.ApiBaseResult.Success">
+            <summary>
+            Флаг, указывающий на успешность выполненного запроса
+            </summary>
+        </member>
+        <member name="P:csharp_course.ApiBaseResult.StatusCode">
+            <summary>
+            Возвращаемый HTTP-код
+            </summary>
+        </member>
+        <member name="P:csharp_course.ApiBaseResult.DateTime">
+            <summary>
+            Дата и время ответа
+            </summary>
+        </member>
+        <member name="P:csharp_course.ApiBaseResult.Message">
+            <summary>
+            Кастомное сообщение с дополнительной информацией
+            Здесь может быть информация об ошибке в случае неуспеха
+            </summary>
+        </member>
+        <member name="T:Program">
+            <summary>
+            Auto-generated public partial Program class for top-level statement apps.
+            </summary>
+        </member>
+    </members>
+</doc>

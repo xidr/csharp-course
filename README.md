@@ -2,6 +2,8 @@
 
 Веб-сервис на ASP.NET Core (.NET 10) для управления событиями (мероприятиями).
 
+Деплой для теста доступен по ссылке: https://api.csharp-course.xidriel.me/swagger/index.html
+
 ---
 
 ## 🚀 Требования

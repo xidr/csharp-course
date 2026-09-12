@@ -1,17 +1,22 @@
 using System.Net;
 
-    namespace csharp_course;
+namespace csharp_course;
 
-// Класс ApiResult c возвращаемыми данными
-// Наследуемся от базового класса с основными параметрами
+/// <summary>
+/// Класс ApiResult с возвращаемыми данными
+/// </summary>
+/// <typeparam name="T">Тип возвращаемых данных</typeparam>
 public class ApiResult<T> : ApiBaseResult
 {
-    // Возвращаемые данные метода
+    /// <summary>
+    /// Возвращаемые данные метода
+    /// </summary>
     public required T Data { get; set; }
 }
 
-// Класс ApiResult без возвращаемых данных
-// Наследуемся от базового класса с основными параметрами
+/// <summary>
+/// Класс ApiResult без возвращаемых данных
+/// </summary>
 public class ApiResult : ApiBaseResult { }
 
 /// <summary>

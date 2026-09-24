@@ -3,3 +3,7 @@ obj/
 /packages/
 riderModule.iml
 /_ReSharper.Caches/
+*/publish
+.idea/
+!.idea/codeStyles/
+!.idea/runConfigurations/

@@ -7,7 +7,7 @@ namespace csharp_course;
 /// Контроллер для управления событиями
 /// </summary>
 [ApiController]
-[Route("api/[controller]")]
+[Route("[controller]")]
 public class EventsController : ControllerBase {
     readonly IEventService _eventService;
     
@@ -95,7 +95,7 @@ public class EventsController : ControllerBase {
         
         var eventId = _eventService.CreateEvent(eventDto.Title, eventDto.Description, eventDto.StartAt, eventDto.EndAt);
 
-        return CreatedAtAction(nameof(GetEventByIndex), new { id = eventId }, new ApiResult<Guid>
+        return CreatedAtAction(nameof(GetEventByIndex), new { index = eventId }, new ApiResult<Guid>
         {
             Data = eventId,
             Success = true,
@@ -124,7 +124,7 @@ public class EventsController : ControllerBase {
     public ActionResult<ApiBaseResult> Put(Guid index,[FromBody]EventDto eventDto)
     {
         if (!ModelState.IsValid) {
-            return NotFound(new ApiResult {
+            return BadRequest(new ApiResult {
                 Success = false,
                 StatusCode = HttpStatusCode.BadRequest,
                 Message = "Некорректные данные"

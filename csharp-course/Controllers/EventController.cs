@@ -24,8 +24,8 @@ public class EventsController : ControllerBase {
     [ProducesResponseType(typeof(ApiResult<List<Event>>), StatusCodes.Status200OK)]
     [Produces("application/json")]
     [HttpGet]
-    public ActionResult<ApiResult<List<Event>>> GetAllEvents() {
-        return Ok(new ApiResult<List<Event>> {
+    public ActionResult<ApiResult> GetAllEvents() {
+        return Ok(new ApiResult<List<EventResponse>> {
             Data = _eventService.GetAllEvents().ToList(),
             Success = true,
             StatusCode = HttpStatusCode.OK,
@@ -50,9 +50,9 @@ public class EventsController : ControllerBase {
         var eventToReturn = _eventService.GetEvent(index);
 
         if (eventToReturn != null) {
-            return Ok( new ApiResult<Event>
+            return Ok( new ApiResult<EventResponse>
             {
-                Data = eventToReturn,
+                Data = eventToReturn.ToResponse(),
                 Success = true,
                 StatusCode = HttpStatusCode.OK,
                 Message = "Получаем событие по индексу из коллекции"

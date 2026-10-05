@@ -9,5 +9,5 @@ public interface IEventService {
 
     Event? GetEvent(Guid eventId);
     
-    IEnumerable<Event> GetAllEvents();
+    IEnumerable<EventResponse> GetAllEvents();
 }

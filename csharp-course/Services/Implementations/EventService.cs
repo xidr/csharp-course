@@ -27,7 +27,13 @@ public class EventService : IEventService {
         return _events.GetValueOrDefault(eventId);
     }
 
-    public IEnumerable<Event> GetAllEvents() {
-        return _events.Values;
+    public IEnumerable<EventResponse> GetAllEvents()
+    {
+        var result = new List<EventResponse>();
+        foreach (var curEvent in _events.Values)
+        {
+            result.Add(curEvent.ToResponse());
+        }
+        return result;
     }
 }

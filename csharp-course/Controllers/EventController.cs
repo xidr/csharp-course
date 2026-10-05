@@ -77,12 +77,12 @@ public class EventsController : ControllerBase {
     [HttpPost]
     public ActionResult<ApiBaseResult> Post([FromBody]EventDto eventDto)
     {
-        var eventId = _eventService.CreateEvent(eventDto.Title, eventDto.Description, eventDto.StartAt!.Value, eventDto.EndAt!.Value);
+        var newEvent = _eventService.CreateEvent(eventDto.Title, eventDto.Description, eventDto.StartAt!.Value, eventDto.EndAt!.Value);
 
-        return CreatedAtAction(nameof(GetEventByIndex), new { index = eventId }, new ApiResult<Guid>
+        return CreatedAtAction(nameof(GetEventByIndex), new {index = newEvent.Id} , new ApiResult<EventResponse>
         {
-            Data = eventId,
-            Success = true,
+            Data = newEvent.ToResponse(),
+            Success = true
         });
     }
     

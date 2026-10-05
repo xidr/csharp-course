@@ -1,7 +1,7 @@
 namespace csharp_course;
 
 public interface IEventService {
-    Guid CreateEvent(string title, string description, DateTime startDate, DateTime endDate);
+    Event CreateEvent(string title, string description, DateTime startDate, DateTime endDate);
     
     bool DeleteEvent(Guid eventId);
     

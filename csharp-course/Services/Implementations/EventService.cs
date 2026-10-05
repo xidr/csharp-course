@@ -3,12 +3,12 @@ namespace csharp_course;
 public class EventService : IEventService {
     readonly Dictionary<Guid, Event> _events = new();
     
-    public Guid CreateEvent(string title, string description, DateTime startDate, DateTime endDate) {
+    public Event CreateEvent(string title, string description, DateTime startDate, DateTime endDate) {
         var newEventId = Guid.NewGuid();
         var newEvent = new Event(newEventId, title, startDate, endDate, description);
         _events.Add(newEventId, newEvent);
         
-        return newEventId;
+        return newEvent;
     }
 
     public bool DeleteEvent(Guid eventId) {

@@ -2,6 +2,7 @@ using System.Net;
 using System.Reflection;
 using csharp_course;
 using Microsoft.AspNetCore.HttpOverrides;
+using Microsoft.AspNetCore.Mvc;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -11,7 +12,45 @@ builder.Services.Configure<ForwardedHeadersOptions>(options =>
     options.KnownProxies.Add(IPAddress.Loopback);
 });
 
-builder.Services.AddControllers();
+
+// builder.Services.AddControllers();
+builder.Services.AddControllers()
+    .ConfigureApiBehaviorOptions(options =>
+    {
+        // Эта опция отключает автоматическую проверку валидации 
+        options.SuppressModelStateInvalidFilter = false;
+
+        options.InvalidModelStateResponseFactory = context =>
+        {
+            // Получаем ошибки валидации          
+            var errors = context.ModelState
+                .Where(kv => kv.Value?.Errors.Count > 0)
+                .ToDictionary(
+                    kv => kv.Key,
+                    kv => kv.Value!.Errors.Select(e => e.ErrorMessage));
+            
+            
+            var apiResult = new ApiResultBadRequest()
+            {
+                Success = false,
+                StatusCode = HttpStatusCode.BadRequest,
+                Message = "Некорректные данные",
+                Errors = errors,
+            };
+
+
+            // Можно получить экземпляр класса Logger и логировать ошибки валидации
+            var logger = context.HttpContext.RequestServices
+                .GetRequiredService<ILogger<Program>>();
+
+            var errorsString = string.Join(",", errors.Select(kv => $"{kv.Key}: {kv.Value}"));
+
+            logger.LogError($"Ошибка валидации: {errorsString}");
+
+            return new BadRequestObjectResult(apiResult);
+        };
+    });
+
 builder.Services.AddHttpLogging(o => { });
 builder.Services.AddSingleton<IEventService, EventService>();
 

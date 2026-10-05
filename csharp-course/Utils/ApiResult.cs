@@ -1,4 +1,5 @@
 using System.Net;
+using Microsoft.Extensions.Primitives;
 
 namespace csharp_course;
 
@@ -18,6 +19,18 @@ public class ApiResult<T> : ApiBaseResult
 /// Класс ApiResult без возвращаемых данных
 /// </summary>
 public class ApiResult : ApiBaseResult { }
+
+/// <summary>
+/// Класс ApiResult для BadRequest с возвращаемыми ошибками
+/// </summary>
+public class ApiResultBadRequest : ApiBaseResult
+{
+    /// <summary>
+    /// Dictionary с ошибками валидации
+    /// </summary>
+    public required Dictionary<string, IEnumerable<string>> Errors { get; set; }
+}
+
 
 /// <summary>
 /// Базовый класс с основными возвращаемыми параметрами

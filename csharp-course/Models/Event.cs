@@ -22,11 +22,11 @@ public class Event
     /// <summary>
     /// Дата и время начала события
     /// </summary>
-    public DateTime StartAt { get; private set; }
+    public DateTime? StartAt { get; private set; }
     /// <summary>
     /// Дата и время окончания события
     /// </summary>
-    public DateTime EndAt { get; private set; }
+    public DateTime? EndAt { get; private set; }
 
     public Event(Guid id, string title, DateTime startAt, DateTime endAt, string description = "")
     {

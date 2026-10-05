@@ -83,7 +83,7 @@ public class EventsController : ControllerBase {
     [HttpPost]
     public ActionResult<ApiBaseResult> Post([FromBody]EventDto eventDto)
     {
-        var eventId = _eventService.CreateEvent(eventDto.Title, eventDto.Description, eventDto.StartAt, eventDto.EndAt);
+        var eventId = _eventService.CreateEvent(eventDto.Title, eventDto.Description, eventDto.StartAt!.Value, eventDto.EndAt!.Value);
 
         return CreatedAtAction(nameof(GetEventByIndex), new { index = eventId }, new ApiResult<Guid>
         {
@@ -114,7 +114,7 @@ public class EventsController : ControllerBase {
     public ActionResult<ApiBaseResult> Put(Guid index,[FromBody]EventDto eventDto)
     {
         
-        var eventChanged = _eventService.UpdateEvent(index, eventDto.Title, eventDto.Description, eventDto.StartAt, eventDto.EndAt);
+        var eventChanged = _eventService.UpdateEvent(index, eventDto.Title, eventDto.Description, eventDto.StartAt!.Value, eventDto.EndAt!.Value);
 
         if (!eventChanged) {
             return NotFound(new ApiResult

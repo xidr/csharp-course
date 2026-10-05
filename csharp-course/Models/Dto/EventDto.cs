@@ -26,15 +26,13 @@ public record EventDto : IValidatableObject
     /// Дата и время начала мероприятия
     /// </summary>
     [Required(ErrorMessage = "Дата начала обязательна для заполнения")]
-    [Range(typeof(DateTime), "2020-01-01", "2030-12-31", ErrorMessage = "Некорректная дата")]
-    public DateTime StartAt { get; init; }
+    public DateTime? StartAt { get; init; }
 
     /// <summary>
     /// Дата и время завершения мероприятия
     /// </summary>
     [Required(ErrorMessage = "Дата завершения обязательна для заполнения")]
-    [Range(typeof(DateTime), "2020-01-01", "2030-12-31", ErrorMessage = "Некорректная дата")]
-    public DateTime EndAt { get; init; }
+    public DateTime? EndAt { get; init; }
 
     
     public IEnumerable<ValidationResult> Validate(ValidationContext validationContext) {

@@ -33,8 +33,8 @@ public class EventService : IEventService {
         return _events.GetValueOrDefault(eventId);
     }
 
-    public IEnumerable<Event> GetAllEvents()
+    public IReadOnlyCollection<Event> GetAllEvents()
     {
-        return _events.Values;
+        return _events.Values.ToArray();
     }
 }

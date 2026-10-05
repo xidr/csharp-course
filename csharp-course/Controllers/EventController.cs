@@ -26,7 +26,7 @@ public class EventsController : ControllerBase {
     [HttpGet]
     public ActionResult<ApiResult> GetAllEvents() {
         return Ok(new ApiResult<List<EventResponse>> {
-            Data = _eventService.GetAllEvents().ToList(),
+            Data = _eventService.GetAllEvents().Select(x => x.ToResponse()).ToList(),
             Success = true,
             StatusCode = HttpStatusCode.OK,
             Message = "Получаем все события"

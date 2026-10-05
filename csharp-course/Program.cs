@@ -33,8 +33,6 @@ builder.Services.AddControllers()
             var apiResult = new ApiResultBadRequest()
             {
                 Success = false,
-                StatusCode = HttpStatusCode.BadRequest,
-                Message = "Некорректные данные",
                 Errors = errors,
             };
 

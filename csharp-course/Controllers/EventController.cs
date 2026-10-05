@@ -28,8 +28,6 @@ public class EventsController : ControllerBase {
         return Ok(new ApiResult<List<EventResponse>> {
             Data = _eventService.GetAllEvents().Select(x => x.ToResponse()).ToList(),
             Success = true,
-            StatusCode = HttpStatusCode.OK,
-            Message = "Получаем все события"
         });
     }
     
@@ -54,16 +52,12 @@ public class EventsController : ControllerBase {
             {
                 Data = eventToReturn.ToResponse(),
                 Success = true,
-                StatusCode = HttpStatusCode.OK,
-                Message = "Получаем событие по индексу из коллекции"
             });
         }
         else {
             return NotFound( new ApiResult
             {
                 Success = false,
-                StatusCode = HttpStatusCode.NotFound,
-                Message = $"Не удалось найти событие по индексу: {index}"
             });
         }
 
@@ -89,8 +83,6 @@ public class EventsController : ControllerBase {
         {
             Data = eventId,
             Success = true,
-            StatusCode = HttpStatusCode.Created,
-            Message = "Событие успешно создано"
         });
     }
     
@@ -120,8 +112,6 @@ public class EventsController : ControllerBase {
             return NotFound(new ApiResult
             {
                 Success = false,
-                StatusCode = HttpStatusCode.NotFound,
-                Message = "События по указанному индексу не найдено"
             });
         }
         else {
@@ -151,16 +141,12 @@ public class EventsController : ControllerBase {
             return Ok(new ApiResult
             {
                 Success = true,
-                StatusCode = HttpStatusCode.OK,
-                Message = "Событие успешно удалено"
             });
         }
         else {
             return NotFound(new ApiResult
             {
                 Success = false,
-                StatusCode = HttpStatusCode.NotFound,
-                Message = "Событие по указанному индексу не найдено"
             });
         }
         

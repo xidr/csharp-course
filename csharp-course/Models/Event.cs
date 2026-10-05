@@ -37,14 +37,7 @@ public class Event
         EndAt = endAt;
     }
 
-    public void UpdateEvent(string title, DateTime startAt, DateTime endAt, string description = "")
-    {
-        
-        Title = title;
-        Description = description;
-        StartAt = startAt;
-        EndAt = endAt;
-    }
+
 
 }
 

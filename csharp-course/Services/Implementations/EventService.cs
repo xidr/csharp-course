@@ -1,26 +1,32 @@
+using System.Collections.Concurrent;
+
 namespace csharp_course;
 
 public class EventService : IEventService {
-    readonly Dictionary<Guid, Event> _events = new();
+    readonly ConcurrentDictionary<Guid, Event> _events = new();
     
     public Event CreateEvent(string title, string description, DateTime startDate, DateTime endDate) {
         var newEventId = Guid.NewGuid();
         var newEvent = new Event(newEventId, title, startDate, endDate, description);
-        _events.Add(newEventId, newEvent);
+        _events.TryAdd(newEventId, newEvent);
         
         return newEvent;
     }
 
     public bool DeleteEvent(Guid eventId) {
-        return _events.Remove(eventId);
+        return _events.TryRemove(eventId, out _);
     }
 
     public bool UpdateEvent(Guid eventId, string title, string description, DateTime startDate, DateTime endDate) {
-        if (!_events.TryGetValue(eventId, out var eventToUpdate))
-            return false;
+        while (_events.TryGetValue(eventId, out var current))
+        {
+            var updated = new Event(eventId, title, startDate, endDate, description);
 
-        eventToUpdate.UpdateEvent(title, startDate, endDate, description);
-        return true;
+            if (_events.TryUpdate(eventId, updated, current))
+                return true;
+        }
+
+        return false;
     }
 
     public Event? GetEvent(Guid eventId) {

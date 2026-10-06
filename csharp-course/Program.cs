@@ -13,23 +13,20 @@ builder.Services.Configure<ForwardedHeadersOptions>(options =>
 });
 
 
-// builder.Services.AddControllers();
 builder.Services.AddControllers()
     .ConfigureApiBehaviorOptions(options =>
     {
-        // Эта опция отключает автоматическую проверку валидации 
         options.SuppressModelStateInvalidFilter = false;
 
         options.InvalidModelStateResponseFactory = context =>
         {
-            // Получаем ошибки валидации          
             var errors = context.ModelState
                 .Where(kv => kv.Value?.Errors.Count > 0)
                 .ToDictionary(
                     kv => kv.Key,
                     kv => kv.Value!.Errors.Select(e => e.ErrorMessage));
-            
-            
+
+
             var apiResult = new ApiResultBadRequest()
             {
                 Success = false,
@@ -37,7 +34,6 @@ builder.Services.AddControllers()
             };
 
 
-            // Можно получить экземпляр класса Logger и логировать ошибки валидации
             var logger = context.HttpContext.RequestServices
                 .GetRequiredService<ILogger<Program>>();
 
@@ -54,7 +50,6 @@ builder.Services.AddSingleton<IEventService, EventService>();
 
 builder.Services.AddSwaggerGen(options =>
 {
-    // Путь к XML-файлу с документацией
     var xmlFile = $"{Assembly.GetExecutingAssembly().GetName().Name}.xml";
     var xmlPath = Path.Combine(AppContext.BaseDirectory, xmlFile);
     options.IncludeXmlComments(xmlPath);
@@ -63,15 +58,10 @@ builder.Services.AddSwaggerGen(options =>
 var app = builder.Build();
 
 
-
-app.UseHttpLogging(); // 0. Компонент журналирования (логирование запросов
-// app.UseHttpsRedirection();    // 1. Перенаправление на HTTPS
-app.UseStaticFiles();         // 2. Статические файлы
-app.UseRouting();             // 3. Маршрутизация
-// app.UseCors();                // 4. CORS
-// app.UseAuthentication();      // 5. Аутентификация
-// app.UseAuthorization();       // 6. Авторизация
-app.MapControllers();         // 7. Эндпоинты
+app.UseHttpLogging();
+app.UseStaticFiles("/static");
+app.UseRouting();
+app.MapControllers();
 
 if (app.Environment.IsDevelopment())
 {

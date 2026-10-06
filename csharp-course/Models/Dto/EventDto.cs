@@ -13,7 +13,7 @@ public record EventDto : IValidatableObject
     [Required(ErrorMessage = "Поле названия мероприятия обязательно для заполнения")]
     [StringLength(100, MinimumLength = 2,
         ErrorMessage = "Название мероприятия должно быть от 2 до 100 символов")]
-    public string Title { get; init; }
+    public required string Title { get; init; }
 
     /// <summary>
     /// Описание мероприятия

@@ -1,0 +1,4 @@
+# .envrc
+export DEPLOY_HOST=user@host
+export DEPLOY_PATH=/opt/ur-csharp-service-folder
+export SERVICE=ur-csharp-service-name

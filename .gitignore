@@ -8,3 +8,4 @@ publish
 !.idea/codeStyles/
 !.idea/runConfigurations/
 csharp-course.sln.DotSettings.user
+/.envrc

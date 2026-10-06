@@ -13,10 +13,11 @@ public class EventsController : ControllerBase
     private readonly IEventService _eventService;
 
 
+
     /// <summary>
-    /// 
+    /// Создаёт контроллер событий
     /// </summary>
-    /// <param name="eventService"></param>
+    /// <param name="eventService">Сервис для работы с событиями</param>
     public EventsController(IEventService eventService)
     {
         _eventService = eventService;

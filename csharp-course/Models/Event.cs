@@ -28,6 +28,14 @@ public class Event
     /// </summary>
     public DateTime EndAt { get; private set; }
 
+    /// <summary>
+    /// Создаёт новое событие
+    /// </summary>
+    /// <param name="id">Уникальный идентификатор события</param>
+    /// <param name="title">Название события</param>
+    /// <param name="startAt">Дата и время начала события</param>
+    /// <param name="endAt">Дата и время окончания события</param>
+    /// <param name="description">Описание события</param>
     public Event(Guid id, string title, DateTime startAt, DateTime endAt, string description = "")
     {
         Id = id;

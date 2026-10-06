@@ -16,8 +16,16 @@ public record EventResponse(
     DateTime EndAt);
     
     
+/// <summary>
+/// Методы преобразования событий
+/// </summary>
 public static class EventMappings
 {
+    /// <summary>
+    /// Преобразует событие в ответ API
+    /// </summary>
+    /// <param name="e">Событие</param>
+    /// <returns>Ответ с данными события</returns>
     public static EventResponse ToResponse(this Event e) =>
         new(e.Id, e.Title, e.Description, e.StartAt, e.EndAt);
 }

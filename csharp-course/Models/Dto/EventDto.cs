@@ -34,7 +34,11 @@ public record EventDto : IValidatableObject
     [Required(ErrorMessage = "Дата завершения обязательна для заполнения")]
     public DateTime? EndAt { get; init; }
 
-    
+    /// <summary>
+    /// Проверяет, что дата завершения позже даты начала
+    /// </summary>
+    /// <param name="validationContext">Контекст валидации</param>
+    /// <returns>Ошибки валидации; пусто, если данные корректны</returns>
     public IEnumerable<ValidationResult> Validate(ValidationContext validationContext) {
         if (EndAt <= StartAt)
         {

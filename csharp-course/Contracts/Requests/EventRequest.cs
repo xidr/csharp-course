@@ -5,7 +5,7 @@ using System.ComponentModel.DataAnnotations;
 /// <summary>
 /// DTO для создания и обновления события
 /// </summary>
-public record EventDto : IValidatableObject
+public record EventRequest : IValidatableObject
 {
     /// <summary>
     /// Название мероприятия

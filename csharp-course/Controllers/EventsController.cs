@@ -29,7 +29,7 @@ public class EventsController : ControllerBase
     /// </summary>
     /// <response code="200">Возвращается JSON-структура с деталями ответа
     /// и HTTP статус-кодом 200 Ok в случае успеха</response>
-    [ProducesResponseType(typeof(ApiResult<List<Event>>), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ApiResult<List<EventResponse>>), StatusCodes.Status200OK)]
     [Produces("application/json")]
     [HttpGet]
     public ActionResult<ApiResult> GetAllEvents()
@@ -77,7 +77,7 @@ public class EventsController : ControllerBase
     /// <summary>
     /// Метод создает новое событие
     /// </summary>
-    /// <param name="eventDto">Данные создаваемого события</param>
+    /// <param name="request">Данные создаваемого события</param>
     /// <response code="201">Возвращается JSON-структура с идентификатором созданного события
     /// и HTTP статус-кодом 201 Created в случае успеха</response>
     /// <response code="400">Возвращается HTTP статус-код 400 Bad Request в случае
@@ -86,10 +86,10 @@ public class EventsController : ControllerBase
     [ProducesResponseType(typeof(ApiResultBadRequest), StatusCodes.Status400BadRequest)]
     [Produces("application/json")]
     [HttpPost]
-    public ActionResult<ApiBaseResult> Post([FromBody] EventDto eventDto)
+    public ActionResult<ApiBaseResult> Post([FromBody] EventRequest request)
     {
-        var newEvent = _eventService.CreateEvent(eventDto.Title, eventDto.Description, eventDto.StartAt!.Value,
-            eventDto.EndAt!.Value);
+        var newEvent = _eventService.CreateEvent(request.Title, request.Description, request.StartAt!.Value,
+            request.EndAt!.Value);
 
         return CreatedAtAction(nameof(GetEventById), new { id = newEvent.Id }, new ApiResult<EventResponse>
         {
@@ -103,7 +103,7 @@ public class EventsController : ControllerBase
     /// Метод обновляет существующее событие по идентификатору
     /// </summary>
     /// <param name="id">Идентификатор события</param>
-    /// <param name="eventDto">Новые данные события</param>
+    /// <param name="request">Новые данные события</param>
     /// <response code="204">Возвращается HTTP статус-код 204 No Content в случае
     /// успешного обновления события</response>
     /// <response code="400">Возвращается HTTP статус-код 400 Bad Request в случае
@@ -115,10 +115,10 @@ public class EventsController : ControllerBase
     [ProducesResponseType(typeof(ApiResult), StatusCodes.Status404NotFound)]
     [Produces("application/json")]
     [HttpPut("{id:guid}")]
-    public ActionResult<ApiBaseResult> Put(Guid id, [FromBody] EventDto eventDto)
+    public ActionResult<ApiBaseResult> Put(Guid id, [FromBody] EventRequest request)
     {
-        var eventChanged = _eventService.UpdateEvent(id, eventDto.Title, eventDto.Description, eventDto.StartAt!.Value,
-            eventDto.EndAt!.Value);
+        var eventChanged = _eventService.UpdateEvent(id, request.Title, request.Description, request.StartAt!.Value,
+            request.EndAt!.Value);
 
         if (!eventChanged)
         {

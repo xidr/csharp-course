@@ -9,7 +9,7 @@ public class EventService : IEventService {
     readonly ConcurrentDictionary<Guid, Event> _events = new();
 
     /// <inheritdoc />
-    public Event CreateEvent(string title, string description, DateTime startDate, DateTime endDate) {
+    public Event CreateEvent(string title, string? description, DateTime startDate, DateTime endDate) {
         var newEventId = Guid.NewGuid();
         var newEvent = new Event(newEventId, title, startDate, endDate, description);
         _events.TryAdd(newEventId, newEvent);
@@ -23,7 +23,7 @@ public class EventService : IEventService {
     }
 
     /// <inheritdoc />
-    public bool UpdateEvent(Guid eventId, string title, string description, DateTime startDate, DateTime endDate) {
+    public bool UpdateEvent(Guid eventId, string title, string? description, DateTime startDate, DateTime endDate) {
         while (_events.TryGetValue(eventId, out var current))
         {
             var updated = new Event(eventId, title, startDate, endDate, description);

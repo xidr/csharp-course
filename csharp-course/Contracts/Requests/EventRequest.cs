@@ -19,8 +19,8 @@ public record EventRequest : IValidatableObject
     /// Описание мероприятия
     /// </summary>
     [StringLength(1000,
-        ErrorMessage = "Описание мероприятия должно быть от 2 до 1000 символов")]
-    public string Description { get; init; } = "";
+        ErrorMessage = "Описание мероприятия должно быть до 1000 символов")]
+    public string? Description { get; init; }
     
     /// <summary>
     /// Дата и время начала мероприятия

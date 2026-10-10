@@ -35,12 +35,12 @@ public class Event
     /// <param name="title">Название события</param>
     /// <param name="startAt">Дата и время начала события</param>
     /// <param name="endAt">Дата и время окончания события</param>
-    /// <param name="description">Описание события</param>
-    public Event(Guid id, string title, DateTime startAt, DateTime endAt, string description = "")
+    /// <param name="description">Описание события, null преобразуется в пустую строку</param>
+    public Event(Guid id, string title, DateTime startAt, DateTime endAt, string? description)
     {
         Id = id;
         Title = title;
-        Description = description;
+        Description = description ?? string.Empty;
         StartAt = startAt;
         EndAt = endAt;
     }

@@ -12,7 +12,7 @@ public interface IEventService {
     /// <param name="startDate">Дата и время начала</param>
     /// <param name="endDate">Дата и время окончания</param>
     /// <returns>Созданное событие</returns>
-    Event CreateEvent(string title, string description, DateTime startDate, DateTime endDate);
+    Event CreateEvent(string title, string? description, DateTime startDate, DateTime endDate);
 
     /// <summary>
     /// Удаляет событие
@@ -30,7 +30,7 @@ public interface IEventService {
     /// <param name="startDate">Новая дата и время начала</param>
     /// <param name="endDate">Новая дата и время окончания</param>
     /// <returns><c>true</c>, если событие найдено и обновлено; иначе <c>false</c></returns>
-    bool UpdateEvent(Guid eventId, string title, string description, DateTime startDate, DateTime endDate);
+    bool UpdateEvent(Guid eventId, string title, string? description, DateTime startDate, DateTime endDate);
 
     /// <summary>
     /// Возвращает событие по идентификатору

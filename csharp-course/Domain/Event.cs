@@ -1,35 +1,37 @@
-using System.ComponentModel.DataAnnotations;
-
 namespace csharp_course;
 
 /// <summary>
-/// Модель события
+///     Модель события
 /// </summary>
 public class Event
 {
     /// <summary>
-    /// Уникальный идентификатор события
+    ///     Уникальный идентификатор события
     /// </summary>
     public Guid Id { get; init; }
+
     /// <summary>
-    /// Название события
+    ///     Название события
     /// </summary>
     public string Title { get; private set; }
+
     /// <summary>
-    /// Описание события
+    ///     Описание события
     /// </summary>
     public string Description { get; private set; }
+
     /// <summary>
-    /// Дата и время начала события
+    ///     Дата и время начала события
     /// </summary>
     public DateTime StartAt { get; private set; }
+
     /// <summary>
-    /// Дата и время окончания события
+    ///     Дата и время окончания события
     /// </summary>
     public DateTime EndAt { get; private set; }
 
     /// <summary>
-    /// Создаёт новое событие
+    ///     Создаёт новое событие
     /// </summary>
     /// <param name="id">Уникальный идентификатор события</param>
     /// <param name="title">Название события</param>
@@ -44,8 +46,4 @@ public class Event
         StartAt = startAt;
         EndAt = endAt;
     }
-
-
-
 }
-

@@ -1,10 +1,9 @@
-using System.Net;
 using Microsoft.AspNetCore.Mvc;
 
 namespace csharp_course;
 
 /// <summary>
-/// Контроллер для управления событиями
+///     Контроллер для управления событиями
 /// </summary>
 [ApiController]
 [Route("[controller]")]
@@ -13,9 +12,8 @@ public class EventsController : ControllerBase
     private readonly IEventService _eventService;
 
 
-
     /// <summary>
-    /// Создаёт контроллер событий
+    ///     Создаёт контроллер событий
     /// </summary>
     /// <param name="eventService">Сервис для работы с событиями</param>
     public EventsController(IEventService eventService)
@@ -25,30 +23,36 @@ public class EventsController : ControllerBase
 
 
     /// <summary>
-    /// Метод возвращает все события
+    ///     Метод возвращает все события
     /// </summary>
-    /// <response code="200">Возвращается JSON-структура с деталями ответа
-    /// и HTTP статус-кодом 200 Ok в случае успеха</response>
+    /// <response code="200">
+    ///     Возвращается JSON-структура с деталями ответа
+    ///     и HTTP статус-кодом 200 Ok в случае успеха
+    /// </response>
     [ProducesResponseType(typeof(ApiResult<List<EventResponse>>), StatusCodes.Status200OK)]
     [Produces("application/json")]
     [HttpGet]
-    public ActionResult<ApiResult> GetAllEvents()
+    public ActionResult<List<EventResponse>> GetAllEvents()
     {
         return Ok(new ApiResult<List<EventResponse>>
         {
             Data = _eventService.GetAllEvents().Select(x => x.ToResponse()).ToList(),
-            Success = true,
+            Success = true
         });
     }
 
     /// <summary>
-    /// Метод возвращает событие по идентификатору
+    ///     Метод возвращает событие по идентификатору
     /// </summary>
     /// <param name="id">Идентификатор события</param>
-    /// <response code="200">Возвращается JSON-структура ApiResult с деталями ответа
-    /// и HTTP статус-кодом 200 Ok в случае успеха</response>
-    /// <response code="404">Возвращается HTTP статус код 404 Not Found в случае
-    /// отсутствия события</response>
+    /// <response code="200">
+    ///     Возвращается JSON-структура ApiResult с деталями ответа
+    ///     и HTTP статус-кодом 200 Ok в случае успеха
+    /// </response>
+    /// <response code="404">
+    ///     Возвращается HTTP статус код 404 Not Found в случае
+    ///     отсутствия события
+    /// </response>
     [ProducesResponseType(typeof(ApiResult<EventResponse>), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ApiResult), StatusCodes.Status404NotFound)]
     [Produces("application/json")]
@@ -58,30 +62,30 @@ public class EventsController : ControllerBase
         var eventToReturn = _eventService.GetEvent(id);
 
         if (eventToReturn != null)
-        {
             return Ok(new ApiResult<EventResponse>
             {
                 Data = eventToReturn.ToResponse(),
-                Success = true,
+                Success = true
             });
-        }
-        else
+
+        return NotFound(new ApiResult
         {
-            return NotFound(new ApiResult
-            {
-                Success = false,
-            });
-        }
+            Success = false
+        });
     }
 
     /// <summary>
-    /// Метод создает новое событие
+    ///     Метод создает новое событие
     /// </summary>
     /// <param name="request">Данные создаваемого события</param>
-    /// <response code="201">Возвращается JSON-структура с идентификатором созданного события
-    /// и HTTP статус-кодом 201 Created в случае успеха</response>
-    /// <response code="400">Возвращается HTTP статус-код 400 Bad Request в случае
-    /// некорректных входных данных</response>
+    /// <response code="201">
+    ///     Возвращается JSON-структура с идентификатором созданного события
+    ///     и HTTP статус-кодом 201 Created в случае успеха
+    /// </response>
+    /// <response code="400">
+    ///     Возвращается HTTP статус-код 400 Bad Request в случае
+    ///     некорректных входных данных
+    /// </response>
     [ProducesResponseType(typeof(ApiResult<EventResponse>), StatusCodes.Status201Created)]
     [ProducesResponseType(typeof(ApiResultBadRequest), StatusCodes.Status400BadRequest)]
     [Produces("application/json")]
@@ -100,17 +104,23 @@ public class EventsController : ControllerBase
 
 
     /// <summary>
-    /// Метод обновляет существующее событие по идентификатору
+    ///     Метод обновляет существующее событие по идентификатору
     /// </summary>
     /// <param name="id">Идентификатор события</param>
     /// <param name="request">Новые данные события</param>
-    /// <response code="204">Возвращается HTTP статус-код 204 No Content в случае
-    /// успешного обновления события</response>
-    /// <response code="400">Возвращается HTTP статус-код 400 Bad Request в случае
-    /// некорректных входных данных</response>
-    /// <response code="404">Возвращается HTTP статус-код 404 Not Found в случае
-    /// отсутствия события</response>
-    [ProducesResponseType(typeof(ApiResult), StatusCodes.Status204NoContent)]
+    /// <response code="204">
+    ///     Возвращается HTTP статус-код 204 No Content в случае
+    ///     успешного обновления события
+    /// </response>
+    /// <response code="400">
+    ///     Возвращается HTTP статус-код 400 Bad Request в случае
+    ///     некорректных входных данных
+    /// </response>
+    /// <response code="404">
+    ///     Возвращается HTTP статус-код 404 Not Found в случае
+    ///     отсутствия события
+    /// </response>
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(typeof(ApiResultBadRequest), StatusCodes.Status400BadRequest)]
     [ProducesResponseType(typeof(ApiResult), StatusCodes.Status404NotFound)]
     [Produces("application/json")]
@@ -121,26 +131,26 @@ public class EventsController : ControllerBase
             request.EndAt!.Value);
 
         if (!eventChanged)
-        {
             return NotFound(new ApiResult
             {
-                Success = false,
+                Success = false
             });
-        }
-        else
-        {
-            return NoContent();
-        }
+
+        return NoContent();
     }
 
     /// <summary>
-    /// Метод удаляет событие по идентификатору
+    ///     Метод удаляет событие по идентификатору
     /// </summary>
     /// <param name="id">Идентификатор события</param>
-    /// <response code="200">Возвращается JSON-структура с подтверждением удаления
-    /// и HTTP статус-кодом 200 OK в случае успеха</response>
-    /// <response code="404">Возвращается HTTP статус-код 404 Not Found в случае
-    /// отсутствия события</response>
+    /// <response code="200">
+    ///     Возвращается JSON-структура с подтверждением удаления
+    ///     и HTTP статус-кодом 200 OK в случае успеха
+    /// </response>
+    /// <response code="404">
+    ///     Возвращается HTTP статус-код 404 Not Found в случае
+    ///     отсутствия события
+    /// </response>
     [ProducesResponseType(typeof(ApiResult), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ApiResult), StatusCodes.Status404NotFound)]
     [Produces("application/json")]
@@ -150,18 +160,14 @@ public class EventsController : ControllerBase
         var eventWasDeleted = _eventService.DeleteEvent(id);
 
         if (eventWasDeleted)
-        {
             return Ok(new ApiResult
             {
-                Success = true,
+                Success = true
             });
-        }
-        else
+
+        return NotFound(new ApiResult
         {
-            return NotFound(new ApiResult
-            {
-                Success = false,
-            });
-        }
+            Success = false
+        });
     }
 }

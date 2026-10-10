@@ -37,9 +37,9 @@ builder.Services.AddControllers()
             var logger = context.HttpContext.RequestServices
                 .GetRequiredService<ILogger<Program>>();
 
-            var errorsString = string.Join(",", errors.Select(kv => $"{kv.Key}: {kv.Value}"));
+            var errorsString = string.Join(",", errors.Select(kv => $"{kv.Key}: {string.Join(", ", kv.Value)}"));
 
-            logger.LogError($"Ошибка валидации: {errorsString}");
+            logger.LogWarning($"Ошибка валидации: {errors}", errorsString);
 
             return new BadRequestObjectResult(apiResult);
         };

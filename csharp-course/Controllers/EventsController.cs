@@ -30,7 +30,6 @@ public class EventsController : ControllerBase
     ///     и HTTP статус-кодом 200 Ok в случае успеха
     /// </response>
     [ProducesResponseType(typeof(ApiResult<List<EventResponse>>), StatusCodes.Status200OK)]
-    [Produces("application/json")]
     [HttpGet]
     public ActionResult<ApiResult<List<EventResponse>>> GetAllEvents()
     {
@@ -54,7 +53,6 @@ public class EventsController : ControllerBase
     /// </response>
     [ProducesResponseType(typeof(ApiResult<EventResponse>), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
-    [Produces("application/json")]
     [HttpGet("{id:guid}")]
     public ActionResult<ApiResult<EventResponse>> GetEventById(Guid id)
     {
@@ -80,7 +78,6 @@ public class EventsController : ControllerBase
     /// </response>
     [ProducesResponseType(typeof(ApiResult<EventResponse>), StatusCodes.Status201Created)]
     [ProducesResponseType(typeof(ValidationProblemDetails), StatusCodes.Status400BadRequest)]
-    [Produces("application/json")]
     [HttpPost]
     public ActionResult<ApiResult<EventResponse>> Post([FromBody] EventRequest request)
     {
@@ -114,7 +111,6 @@ public class EventsController : ControllerBase
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(typeof(ValidationProblemDetails), StatusCodes.Status400BadRequest)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
-    [Produces("application/json")]
     [HttpPut("{id:guid}")]
     public ActionResult Put(Guid id, [FromBody] EventRequest request)
     {
@@ -138,7 +134,6 @@ public class EventsController : ControllerBase
     /// </response>
     [ProducesResponseType(typeof(ApiResult), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
-    [Produces("application/json")]
     [HttpDelete("{id:guid}")]
     public ActionResult<ApiResult> Delete(Guid id)
     {

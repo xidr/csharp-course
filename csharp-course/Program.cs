@@ -6,6 +6,7 @@ using Microsoft.AspNetCore.Mvc;
 
 var builder = WebApplication.CreateBuilder(args);
 
+
 builder.Services.Configure<ForwardedHeadersOptions>(options =>
 {
     options.ForwardedHeaders = ForwardedHeaders.XForwardedFor | ForwardedHeaders.XForwardedProto;
@@ -59,6 +60,7 @@ var app = builder.Build();
 
 app.UseForwardedHeaders();
 app.UseHttpLogging();
+app.UseGlobalExceptionHandling();
 app.UseStaticFiles("/static");
 app.UseRouting();
 app.MapControllers();

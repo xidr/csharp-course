@@ -66,16 +66,56 @@ dotnet run --project csharp-course
 - `startAt` (дата/время): дата и время начала.
 - `endAt` (дата/время): дата и время окончания.
 
-#### `ApiResult<T>` / `ApiBaseResult` (формат ответа)
-- `success` (boolean): признак успешного выполнения запроса.
+#### `ApiResult<T>` / `ApiResult` (формат успешного ответа)
 - `dateTime` (datetime): дата и время формирования ответа (UTC).
-- `data` (T, для `ApiResult<T>`): возвращаемые полезные данные.
+- `data` (T, только для `ApiResult<T>`): возвращаемые полезные данные.
 
 HTTP-код передаётся только в статусе ответа, в теле его нет.
 
-#### `ApiResultBadRequest` (формат ответа `400 Bad Request`)
-Содержит поля `success` и `dateTime` из `ApiBaseResult`, а также:
+#### Формат ошибок (Problem Details, RFC 7807)
+Все ошибки возвращаются с `Content-Type: application/problem+json`.
+
+`ProblemDetails` (ошибки `404 Not Found` и `500 Internal Server Error`):
+- `status` (integer): HTTP-код ответа.
+- `detail` (строка): описание ошибки. Для `500` всегда возвращается общее сообщение без внутренних подробностей.
+
+`ValidationProblemDetails` (ошибка `400 Bad Request`):
+- `title` (строка): общее описание ошибки.
+- `status` (integer): HTTP-код ответа (`400`).
 - `errors` (объект `поле -> массив сообщений`): ошибки валидации, сгруппированные по имени поля.
+
+Пример ответа `400 Bad Request`:
+
+```json
+{
+  "title": "One or more validation errors occurred.",
+  "status": 400,
+  "errors": {
+    "Title": ["Название мероприятия должно быть от 2 до 100 символов"]
+  }
+}
+```
+
+Пример ответа `404 Not Found`:
+
+```json
+{
+  "status": 404,
+  "detail": "Событие 3fa85f64-5717-4562-b3fc-2c963f66afa6 не найдено"
+}
+```
+
+### Обработка ошибок
+
+Ошибки валидации тела запроса (`EventRequest`) обрабатываются при привязке модели и возвращаются как `ValidationProblemDetails`.
+Остальные исключения перехватывает `GlobalExceptionHandlingMiddleware`:
+
+| Исключение | HTTP-статус | Уровень логирования |
+|---|---|---|
+| `ValidationException` | `400 Bad Request` | `Information` |
+| `NotFoundException` | `404 Not Found` | `Information` |
+| любое другое | `500 Internal Server Error` | `Error` (со стеком вызовов) |
+
 
 ---
 
@@ -85,7 +125,7 @@ HTTP-код передаётся только в статусе ответа, в
 - **Метод**: `GET`
 - **Путь**: `/events`
 - **Ответ**:
-  - `200 OK`: возвращает список всех событий (`ApiResult<IEnumerable<EventResponse>>`).
+  - `200 OK`: возвращает список всех событий (`ApiResult<List<EventResponse>>`).
 
 #### 2. Получить событие по ID
 - **Метод**: `GET`
@@ -93,7 +133,7 @@ HTTP-код передаётся только в статусе ответа, в
 - **Параметры**: `id` (GUID) — идентификатор события.
 - **Ответ**:
   - `200 OK`: событие найдено (`ApiResult<EventResponse>`).
-  - `404 Not Found`: событие с указанным идентификатором не найдено.
+  - `404 Not Found`: событие с указанным идентификатором не найдено (`ProblemDetails`).
 
 #### 3. Создать событие
 - **Метод**: `POST`
@@ -101,7 +141,7 @@ HTTP-код передаётся только в статусе ответа, в
 - **Тело запроса**: `EventRequest` (JSON)
 - **Ответ**:
   - `201 Created`: событие успешно создано, возвращает созданное событие (`ApiResult<EventResponse>`).
-  - `400 Bad Request`: ошибка валидации входных данных (`ApiResultBadRequest`).
+  - `400 Bad Request`: ошибка валидации входных данных (`ValidationProblemDetails`).
 
 #### 4. Обновить событие
 - **Метод**: `PUT`
@@ -109,9 +149,9 @@ HTTP-код передаётся только в статусе ответа, в
 - **Параметры**: `id` (GUID) — идентификатор обновляемого события.
 - **Тело запроса**: `EventRequest` (JSON)
 - **Ответ**:
-  - `204 NoContent`: событие успешно обновлено (`ApiResult`).
-  - `400 Bad Request`: ошибка валидации входных данных (`ApiResultBadRequest`).
-  - `404 Not Found`: событие не найдено.
+  - `204 No Content`: событие успешно обновлено, тело ответа пустое.
+  - `400 Bad Request`: ошибка валидации входных данных (`ValidationProblemDetails`).
+  - `404 Not Found`: событие не найдено (`ProblemDetails`).
 
 #### 5. Удалить событие
 - **Метод**: `DELETE`
@@ -119,4 +159,4 @@ HTTP-код передаётся только в статусе ответа, в
 - **Параметры**: `id` (GUID) — идентификатор удаляемого события.
 - **Ответ**:
   - `200 OK`: событие успешно удалено (`ApiResult`).
-  - `404 Not Found`: событие не найдено.
+  - `404 Not Found`: событие не найдено (`ProblemDetails`).

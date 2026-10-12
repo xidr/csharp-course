@@ -23,19 +23,26 @@ public class EventsController : ControllerBase
 
 
     /// <summary>
-    ///     Метод возвращает все события
+    ///     Метод возвращает события с учётом необязательных фильтров
     /// </summary>
+    /// <param name="filter">Параметры фильтрации: название, дата начала, дата окончания</param>
     /// <response code="200">
     ///     Возвращается JSON-структура с деталями ответа
     ///     и HTTP статус-кодом 200 Ok в случае успеха
     /// </response>
+    /// <response code="400">
+    ///     Возвращается HTTP статус-код 400 Bad Request в случае
+    ///     некорректных параметров фильтрации
+    /// </response>
     [ProducesResponseType(typeof(ApiResult<List<EventResponse>>), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ValidationProblemDetails), StatusCodes.Status400BadRequest)]
     [HttpGet]
-    public ActionResult<ApiResult<List<EventResponse>>> GetAllEvents()
+    public ActionResult<ApiResult<List<EventResponse>>> GetAllEvents([FromQuery] EventsFilterRequest filter)
     {
         return Ok(new ApiResult<List<EventResponse>>
         {
-            Data = _eventService.GetAllEvents().Select(x => x.ToResponse()).ToList()
+            Data = _eventService.GetAllEvents(filter.Title, filter.From, filter.To)
+                .Select(x => x.ToResponse()).ToList()
         });
     }
 

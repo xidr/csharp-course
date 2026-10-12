@@ -2,6 +2,9 @@ using System.ComponentModel.DataAnnotations;
 
 namespace csharp_course;
 
+/// <summary>
+/// Параметры фильтрации списка событий
+/// </summary>
 public record EventsFilterRequest : IValidatableObject
 {
     /// <summary>Поиск по названию (регистронезависимый, частичное совпадение)</summary>
@@ -13,6 +16,11 @@ public record EventsFilterRequest : IValidatableObject
     /// <summary>События, заканчивающиеся не позже указанной даты</summary>
     public DateTime? To { get; init; }
 
+    /// <summary>
+    /// Проверяет, что дата начала диапазона не позже даты его окончания
+    /// </summary>
+    /// <param name="validationContext">Контекст валидации</param>
+    /// <returns>Ошибки валидации; пусто, если данные корректны</returns>
     public IEnumerable<ValidationResult> Validate(ValidationContext validationContext)
     {
         if (From > To)

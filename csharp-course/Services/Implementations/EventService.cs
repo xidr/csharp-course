@@ -47,8 +47,19 @@ public class EventService : IEventService {
     }
 
     /// <inheritdoc />
-    public IReadOnlyCollection<Event> GetAllEvents()
+    public IReadOnlyCollection<Event> GetAllEvents(string? title, DateTime? from, DateTime? to)
     {
-        return _events.Values.ToArray();
+        IEnumerable<Event> events = _events.Values;
+
+        if (!string.IsNullOrWhiteSpace(title))
+            events = events.Where(e => e.Title.Contains(title, StringComparison.OrdinalIgnoreCase));
+
+        if (from.HasValue)
+            events = events.Where(e => e.StartAt >= from.Value);
+
+        if (to.HasValue)
+            events = events.Where(e => e.EndAt <= to.Value);
+
+        return events.ToArray();
     }
 }

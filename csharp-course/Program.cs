@@ -28,12 +28,13 @@ builder.Services.AddControllers()
                     kv => kv.Value!.Errors.Select(e => e.ErrorMessage));
 
 
-            var apiResult = new ApiResultBadRequest()
-            {
-                Success = false,
-                Errors = errors,
-            };
-
+            // var apiResult = new ApiResultBadRequest()
+            // {
+            //     Success = false,
+            //     Errors = errors,
+            // };
+            
+            
 
             var logger = context.HttpContext.RequestServices
                 .GetRequiredService<ILogger<Program>>();
@@ -41,8 +42,13 @@ builder.Services.AddControllers()
             var errorsString = string.Join(",", errors.Select(kv => $"{kv.Key}: {string.Join(", ", kv.Value)}"));
 
             logger.LogWarning($"Ошибка валидации: {errors}", errorsString);
+            
+            var problem = new ValidationProblemDetails(context.ModelState)
+            {
+                Status = StatusCodes.Status400BadRequest
+            };
 
-            return new BadRequestObjectResult(apiResult);
+            return new BadRequestObjectResult(problem);
         };
     });
 

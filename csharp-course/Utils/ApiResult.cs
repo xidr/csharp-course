@@ -20,26 +20,10 @@ public class ApiResult : ApiBaseResult
 }
 
 /// <summary>
-///     Класс ApiResult для BadRequest с возвращаемыми ошибками
-/// </summary>
-public class ApiResultBadRequest : ApiBaseResult
-{
-    /// <summary>
-    ///     Dictionary с ошибками валидации
-    /// </summary>
-    public required Dictionary<string, IEnumerable<string>> Errors { get; set; }
-}
-
-/// <summary>
 ///     Базовый класс с основными возвращаемыми параметрами
 /// </summary>
 public class ApiBaseResult
 {
-    /// <summary>
-    ///     Флаг, указывающий на успешность выполненного запроса
-    /// </summary>
-    public required bool Success { get; set; }
-
     /// <summary>
     ///     Дата и время ответа
     /// </summary>

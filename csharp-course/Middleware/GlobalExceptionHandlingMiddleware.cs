@@ -1,4 +1,5 @@
 using System.ComponentModel.DataAnnotations;
+using Microsoft.AspNetCore.Mvc;
 
 namespace csharp_course;
 
@@ -50,7 +51,7 @@ public class GlobalExceptionHandlingMiddleware
         var statusCode = MapStatusCode(ex);
 
         httpContext.Response.StatusCode = statusCode;
-        httpContext.Response.ContentType = "application/json";
+        httpContext.Response.ContentType = "application/problem+json";
 
         var error = new ProblemDetails
         {
@@ -67,8 +68,8 @@ public class GlobalExceptionHandlingMiddleware
     {
         return ex switch
         {
-            ValidationException ve => StatusCodes.Status400BadRequest,
-            Exception => StatusCodes.Status404NotFound,
+            ValidationException => StatusCodes.Status400BadRequest,
+            NotFoundException => StatusCodes.Status404NotFound,
             _ => StatusCodes.Status500InternalServerError
         };
     }

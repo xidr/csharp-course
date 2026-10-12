@@ -121,7 +121,7 @@ public class EventsController : ControllerBase
     ///     отсутствия события
     /// </response>
     [ProducesResponseType(StatusCodes.Status204NoContent)]
-    [ProducesResponseType(typeof(ApiResultBadRequest), StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(typeof(ValidationProblemDetails), StatusCodes.Status400BadRequest)]
     [ProducesResponseType(typeof(ApiResult), StatusCodes.Status404NotFound)]
     [Produces("application/json")]
     [HttpPut("{id:guid}")]
@@ -130,6 +130,7 @@ public class EventsController : ControllerBase
         var eventChanged = _eventService.UpdateEvent(id, request.Title, request.Description, request.StartAt!.Value,
             request.EndAt!.Value);
 
+        
         if (!eventChanged)
             return NotFound(new ApiResult
             {

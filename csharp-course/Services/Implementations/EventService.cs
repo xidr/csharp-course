@@ -47,7 +47,7 @@ public class EventService : IEventService {
     }
 
     /// <inheritdoc />
-    public IReadOnlyCollection<Event> GetAllEvents(string? title, DateTime? from, DateTime? to)
+    public PaginatedResult<Event> GetAllEvents(string? title, DateTime? from, DateTime? to, int page, int pageSize)
     {
         IEnumerable<Event> events = _events.Values;
 
@@ -60,6 +60,14 @@ public class EventService : IEventService {
         if (to.HasValue)
             events = events.Where(e => e.EndAt <= to.Value);
 
-        return events.ToArray();
+        var filtered = events
+            .OrderBy(e => e.StartAt)
+            .ThenBy(e => e.Id)
+            .ToArray();
+
+        var skip = (int)Math.Min((long)(page - 1) * pageSize, int.MaxValue);
+        var items = filtered.Skip(skip).Take(pageSize).ToArray();
+
+        return new PaginatedResult<Event>(items, filtered.Length, page, pageSize);
     }
 }

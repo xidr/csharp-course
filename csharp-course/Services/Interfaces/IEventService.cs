@@ -40,12 +40,15 @@ public interface IEventService {
     Event GetEvent(Guid eventId);
 
     /// <summary>
-    /// Возвращает события, удовлетворяющие переданным фильтрам.
-    /// Фильтры применяются только если заданы и комбинируются по правилу логического И
+    /// Возвращает страницу событий, удовлетворяющих переданным фильтрам.
+    /// Фильтры применяются только если заданы и комбинируются по правилу логического И.
+    /// События упорядочены по дате начала
     /// </summary>
     /// <param name="title">Часть названия события (регистронезависимый)</param>
     /// <param name="from">События, начинающиеся не раньше указанной даты</param>
     /// <param name="to">События, заканчивающиеся не позже указанной даты</param>
-    /// <returns>Коллекция подходящих событий</returns>
-    IReadOnlyCollection<Event> GetAllEvents(string? title, DateTime? from, DateTime? to);
+    /// <param name="page">Номер страницы (начиная с 1)</param>
+    /// <param name="pageSize">Количество элементов на странице</param>
+    /// <returns>Запрошенная страница событий и общее количество подходящих событий</returns>
+    PaginatedResult<Event> GetAllEvents(string? title, DateTime? from, DateTime? to, int page, int pageSize);
 }

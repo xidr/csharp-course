@@ -23,26 +23,35 @@ public class EventsController : ControllerBase
 
 
     /// <summary>
-    ///     Метод возвращает события с учётом необязательных фильтров
+    ///     Метод возвращает страницу событий с учётом необязательных фильтров
     /// </summary>
-    /// <param name="filter">Параметры фильтрации: название, дата начала, дата окончания</param>
+    /// <param name="filter">
+    ///     Параметры фильтрации и пагинации: название, дата начала, дата окончания,
+    ///     номер страницы и её размер
+    /// </param>
     /// <response code="200">
     ///     Возвращается JSON-структура с деталями ответа
     ///     и HTTP статус-кодом 200 Ok в случае успеха
     /// </response>
     /// <response code="400">
     ///     Возвращается HTTP статус-код 400 Bad Request в случае
-    ///     некорректных параметров фильтрации
+    ///     некорректных параметров фильтрации или пагинации
     /// </response>
-    [ProducesResponseType(typeof(ApiResult<List<EventResponse>>), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ApiResult<PaginatedResult<EventResponse>>), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ValidationProblemDetails), StatusCodes.Status400BadRequest)]
     [HttpGet]
-    public ActionResult<ApiResult<List<EventResponse>>> GetAllEvents([FromQuery] EventsFilterRequest filter)
+    public ActionResult<ApiResult<PaginatedResult<EventResponse>>> GetAllEvents([FromQuery] EventsFilterRequest filter)
     {
-        return Ok(new ApiResult<List<EventResponse>>
+        var result = _eventService.GetAllEvents(
+            filter.Title, filter.From, filter.To, filter.Page, filter.PageSize);
+
+        return Ok(new ApiResult<PaginatedResult<EventResponse>>
         {
-            Data = _eventService.GetAllEvents(filter.Title, filter.From, filter.To)
-                .Select(x => x.ToResponse()).ToList()
+            Data = new PaginatedResult<EventResponse>(
+                result.Items.Select(x => x.ToResponse()).ToList(),
+                result.TotalCount,
+                result.Page,
+                result.PageSize)
         });
     }
 

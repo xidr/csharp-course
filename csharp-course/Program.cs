@@ -33,7 +33,13 @@ builder.Services.AddControllers()
 
             var errorsString = string.Join(",", errors.Select(kv => $"{kv.Key}: {string.Join(", ", kv.Value)}"));
 
-            logger.LogWarning($"Ошибка валидации: {errorsString}");
+            logger.LogInformation(
+                "Ошибка с кодом {StatusCode}: {Message}. Method={Method}, Path={Path}, RequestId={RequestId}",
+                StatusCodes.Status400BadRequest,
+                errorsString,
+                context.HttpContext.Request.Method,
+                context.HttpContext.Request.Path,
+                context.HttpContext.Request.Headers["x-request-id"]);
             
             var problem = new ValidationProblemDetails(context.ModelState)
             {

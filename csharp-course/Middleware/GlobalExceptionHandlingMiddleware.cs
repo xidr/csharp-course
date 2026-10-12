@@ -1,4 +1,5 @@
 using System.ComponentModel.DataAnnotations;
+using System.Text.Json;
 using Microsoft.AspNetCore.Mvc;
 
 namespace csharp_course;
@@ -39,16 +40,25 @@ public class GlobalExceptionHandlingMiddleware
 
     private async Task HandleException(HttpContext httpContext, Exception ex)
     {
-        _logger.LogError(
-            ex,
-            "Unhandled exception. Method={Method}, Path={Path}, RequestId={RequestId}",
+        var statusCode = MapStatusCode(ex);
+        
+        var logLevel = statusCode >= StatusCodes.Status500InternalServerError
+            ? LogLevel.Error
+            : LogLevel.Warning;
+        
+        _logger.Log(
+            logLevel,
+            statusCode >= StatusCodes.Status500InternalServerError ? ex : null,
+            "Request failed with {StatusCode}: {Message}. Method={Method}, Path={Path}, RequestId={RequestId}",
+            statusCode,
+            ex.Message,
             httpContext.Request.Method,
             httpContext.Request.Path,
             httpContext.Request.Headers["x-request-id"]);
 
+
         if (httpContext.Response.HasStarted) return;
 
-        var statusCode = MapStatusCode(ex);
 
         httpContext.Response.StatusCode = statusCode;
         httpContext.Response.ContentType = "application/problem+json";
@@ -61,7 +71,7 @@ public class GlobalExceptionHandlingMiddleware
                 : ex.Message
         };
 
-        await httpContext.Response.WriteAsJsonAsync(error);
+        await httpContext.Response.WriteAsJsonAsync(error, (JsonSerializerOptions?)null, "application/problem+json");
     }
 
     private static int MapStatusCode(Exception ex)

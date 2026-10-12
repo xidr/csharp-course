@@ -18,26 +18,32 @@ public class EventService : IEventService {
     }
 
     /// <inheritdoc />
-    public bool DeleteEvent(Guid eventId) {
-        return _events.TryRemove(eventId, out _);
+    public void DeleteEvent(Guid eventId) {
+        if (!_events.TryRemove(eventId, out _))
+            throw new NotFoundException($"Событие {eventId} не найдено");
     }
 
     /// <inheritdoc />
-    public bool UpdateEvent(Guid eventId, string title, string? description, DateTime startDate, DateTime endDate) {
+    public void UpdateEvent(Guid eventId, string title, string? description, DateTime startDate, DateTime endDate) {
         while (_events.TryGetValue(eventId, out var current))
         {
             var updated = new Event(eventId, title, startDate, endDate, description);
 
             if (_events.TryUpdate(eventId, updated, current))
-                return true;
+                return;
         }
-
-        return false;
+        
+        throw new NotFoundException($"Событие {eventId} не найдено");
     }
 
     /// <inheritdoc />
-    public Event? GetEvent(Guid eventId) {
-        return _events.GetValueOrDefault(eventId);
+    public Event GetEvent(Guid eventId) {
+        var foundEvent = _events.GetValueOrDefault(eventId);
+        
+        if (foundEvent is null)
+            throw new NotFoundException($"Событие {eventId} не найдено");
+        
+        return foundEvent;
     }
 
     /// <inheritdoc />

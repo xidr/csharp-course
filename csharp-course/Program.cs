@@ -26,14 +26,6 @@ builder.Services.AddControllers()
                 .ToDictionary(
                     kv => kv.Key,
                     kv => kv.Value!.Errors.Select(e => e.ErrorMessage));
-
-
-            // var apiResult = new ApiResultBadRequest()
-            // {
-            //     Success = false,
-            //     Errors = errors,
-            // };
-            
             
 
             var logger = context.HttpContext.RequestServices
@@ -41,7 +33,7 @@ builder.Services.AddControllers()
 
             var errorsString = string.Join(",", errors.Select(kv => $"{kv.Key}: {string.Join(", ", kv.Value)}"));
 
-            logger.LogWarning($"Ошибка валидации: {errors}", errorsString);
+            logger.LogWarning($"Ошибка валидации: {errorsString}");
             
             var problem = new ValidationProblemDetails(context.ModelState)
             {

@@ -19,7 +19,7 @@ public interface IEventService {
     /// </summary>
     /// <param name="eventId">Идентификатор события</param>
     /// <returns><c>true</c>, если событие найдено и удалено; иначе <c>false</c></returns>
-    bool DeleteEvent(Guid eventId);
+    void DeleteEvent(Guid eventId);
 
     /// <summary>
     /// Обновляет существующее событие
@@ -30,14 +30,14 @@ public interface IEventService {
     /// <param name="startDate">Новая дата и время начала</param>
     /// <param name="endDate">Новая дата и время окончания</param>
     /// <returns><c>true</c>, если событие найдено и обновлено; иначе <c>false</c></returns>
-    bool UpdateEvent(Guid eventId, string title, string? description, DateTime startDate, DateTime endDate);
+    void UpdateEvent(Guid eventId, string title, string? description, DateTime startDate, DateTime endDate);
 
     /// <summary>
     /// Возвращает событие по идентификатору
     /// </summary>
     /// <param name="eventId">Идентификатор события</param>
     /// <returns>Событие или <c>null</c>, если оно не найдено</returns>
-    Event? GetEvent(Guid eventId);
+    Event GetEvent(Guid eventId);
 
     /// <summary>
     /// Возвращает все события

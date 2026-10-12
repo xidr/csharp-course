@@ -32,12 +32,11 @@ public class EventsController : ControllerBase
     [ProducesResponseType(typeof(ApiResult<List<EventResponse>>), StatusCodes.Status200OK)]
     [Produces("application/json")]
     [HttpGet]
-    public ActionResult<List<EventResponse>> GetAllEvents()
+    public ActionResult<ApiResult<List<EventResponse>>> GetAllEvents()
     {
         return Ok(new ApiResult<List<EventResponse>>
         {
-            Data = _eventService.GetAllEvents().Select(x => x.ToResponse()).ToList(),
-            Success = true
+            Data = _eventService.GetAllEvents().Select(x => x.ToResponse()).ToList()
         });
     }
 
@@ -54,23 +53,16 @@ public class EventsController : ControllerBase
     ///     отсутствия события
     /// </response>
     [ProducesResponseType(typeof(ApiResult<EventResponse>), StatusCodes.Status200OK)]
-    [ProducesResponseType(typeof(ApiResult), StatusCodes.Status404NotFound)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
     [Produces("application/json")]
     [HttpGet("{id:guid}")]
-    public ActionResult<ApiBaseResult> GetEventById(Guid id)
+    public ActionResult<ApiResult<EventResponse>> GetEventById(Guid id)
     {
         var eventToReturn = _eventService.GetEvent(id);
 
-        if (eventToReturn != null)
-            return Ok(new ApiResult<EventResponse>
-            {
-                Data = eventToReturn.ToResponse(),
-                Success = true
-            });
-
-        return NotFound(new ApiResult
+        return Ok(new ApiResult<EventResponse>
         {
-            Success = false
+            Data = eventToReturn.ToResponse()
         });
     }
 
@@ -87,18 +79,17 @@ public class EventsController : ControllerBase
     ///     некорректных входных данных
     /// </response>
     [ProducesResponseType(typeof(ApiResult<EventResponse>), StatusCodes.Status201Created)]
-    [ProducesResponseType(typeof(ApiResultBadRequest), StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(typeof(ValidationProblemDetails), StatusCodes.Status400BadRequest)]
     [Produces("application/json")]
     [HttpPost]
-    public ActionResult<ApiBaseResult> Post([FromBody] EventRequest request)
+    public ActionResult<ApiResult<EventResponse>> Post([FromBody] EventRequest request)
     {
         var newEvent = _eventService.CreateEvent(request.Title, request.Description, request.StartAt!.Value,
             request.EndAt!.Value);
 
         return CreatedAtAction(nameof(GetEventById), new { id = newEvent.Id }, new ApiResult<EventResponse>
         {
-            Data = newEvent.ToResponse(),
-            Success = true
+            Data = newEvent.ToResponse()
         });
     }
 
@@ -122,20 +113,13 @@ public class EventsController : ControllerBase
     /// </response>
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(typeof(ValidationProblemDetails), StatusCodes.Status400BadRequest)]
-    [ProducesResponseType(typeof(ApiResult), StatusCodes.Status404NotFound)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
     [Produces("application/json")]
     [HttpPut("{id:guid}")]
-    public ActionResult<ApiBaseResult> Put(Guid id, [FromBody] EventRequest request)
+    public ActionResult Put(Guid id, [FromBody] EventRequest request)
     {
-        var eventChanged = _eventService.UpdateEvent(id, request.Title, request.Description, request.StartAt!.Value,
+        _eventService.UpdateEvent(id, request.Title, request.Description, request.StartAt!.Value,
             request.EndAt!.Value);
-
-        
-        if (!eventChanged)
-            return NotFound(new ApiResult
-            {
-                Success = false
-            });
 
         return NoContent();
     }
@@ -153,22 +137,13 @@ public class EventsController : ControllerBase
     ///     отсутствия события
     /// </response>
     [ProducesResponseType(typeof(ApiResult), StatusCodes.Status200OK)]
-    [ProducesResponseType(typeof(ApiResult), StatusCodes.Status404NotFound)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
     [Produces("application/json")]
     [HttpDelete("{id:guid}")]
-    public ActionResult<ApiBaseResult> Delete(Guid id)
+    public ActionResult<ApiResult> Delete(Guid id)
     {
-        var eventWasDeleted = _eventService.DeleteEvent(id);
+        _eventService.DeleteEvent(id);
 
-        if (eventWasDeleted)
-            return Ok(new ApiResult
-            {
-                Success = true
-            });
-
-        return NotFound(new ApiResult
-        {
-            Success = false
-        });
+        return Ok(new ApiResult());
     }
 }

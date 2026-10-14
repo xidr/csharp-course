@@ -78,8 +78,9 @@ csharp-course/             # веб-приложение
 ├── Contracts/
 │   ├── Requests/          # EventRequest, EventsFilterRequest
 │   └── Responses/         # EventResponse, PaginatedResult<T>
-├── Domain/                # Event, IEventRepository, EventRepositoryDict
+├── Domain/                # Event
 ├── Services/              # IEventService, EventService — бизнес-логика
+├── Repositories/	   # EventRepository, EventRepositoryDict
 ├── Middleware/            # GlobalExceptionHandlingMiddleware
 └── Utils/                 # ApiResult, NotFoundException
 csharp-course.Tests/       # юнит-тесты (xUnit)

@@ -1,3 +1,4 @@
+using System.Collections.Concurrent;
 using System.ComponentModel.DataAnnotations;
 
 namespace csharp_course.Tests;
@@ -9,18 +10,27 @@ public class EventServiceTests
 
     private readonly EventService _service = new();
 
-    private static DateTime Day(int month, int day, int hour = 10) => new(2026, month, day, hour, 0, 0);
+    private static DateTime Day(int month, int day, int hour = 10)
+    {
+        return new DateTime(2026, month, day, hour, 0, 0);
+    }
 
     /// <summary>Создаёт событие длительностью 2 часа, начинающееся в указанное время</summary>
-    private Event Add(string title, DateTime startAt, string? description = null) =>
-        _service.CreateEvent(title, description, startAt, startAt.AddHours(2));
+    private Event Add(string title, DateTime startAt, string? description = null)
+    {
+        return _service.CreateEvent(title, description, startAt, startAt.AddHours(2));
+    }
 
     private PaginatedResult<Event> Query(
-        string? title = null, DateTime? from = null, DateTime? to = null, int page = 1, int pageSize = 100) =>
-        _service.GetAllEvents(title, from, to, page, pageSize);
+        string? title = null, DateTime? from = null, DateTime? to = null, int page = 1, int pageSize = 100)
+    {
+        return _service.GetAllEvents(title, from, to, page, pageSize);
+    }
 
-    private static string[] Titles(PaginatedResult<Event> result) =>
-        result.Items.Select(e => e.Title).ToArray();
+    private static string[] Titles(PaginatedResult<Event> result)
+    {
+        return result.Items.Select(e => e.Title).ToArray();
+    }
 
     // ---------- Успешные сценарии ----------
 
@@ -172,7 +182,7 @@ public class EventServiceTests
         Add("Концерт джаза", Day(1, 1));
         Add("Лекция по C#", Day(1, 2));
 
-        var result = Query(title: title);
+        var result = Query(title);
 
         Assert.Equal(new[] { "Концерт джаза" }, Titles(result));
     }
@@ -184,7 +194,7 @@ public class EventServiceTests
     {
         Add("Концерт", Day(1, 1));
 
-        var result = Query(title: "несуществующее");
+        var result = Query("несуществующее");
 
         Assert.Empty(result.Items);
         Assert.Equal(0, result.TotalCount);
@@ -201,7 +211,7 @@ public class EventServiceTests
         Add("A", Day(1, 1));
         Add("B", Day(1, 2));
 
-        var result = Query(title: title);
+        var result = Query(title);
 
         Assert.Equal(2, result.TotalCount);
     }
@@ -225,7 +235,7 @@ public class EventServiceTests
     [Trait("Feature", "Filtering")]
     public void GetAllEvents_FilterByTo_ReturnsEventsEndingNotLater()
     {
-        Add("Раньше", Day(1, 1));                                            // заканчивается 1 янв 12:00
+        Add("Раньше", Day(1, 1)); // заканчивается 1 янв 12:00
         _service.CreateEvent("Ровно в границу", null, Day(2, 1), Day(2, 1, 20)); // заканчивается в 20:00
         Add("Позже", Day(3, 1));
 
@@ -348,7 +358,7 @@ public class EventServiceTests
         Add("Джаз летом", Day(7, 10));
         Add("Лекция весной", Day(4, 12));
 
-        var result = Query(title: "джаз", from: Day(3, 1), to: Day(6, 30));
+        var result = Query("джаз", Day(3, 1), Day(6, 30));
 
         Assert.Equal(new[] { "Джаз весной" }, Titles(result));
         Assert.Equal(1, result.TotalCount);
@@ -364,7 +374,7 @@ public class EventServiceTests
         Add("Лекция", Day(4, 20));
         Add("Джаз осенью", Day(10, 1));
 
-        var result = Query(title: "джаз", from: Day(4, 1), to: Day(4, 30), page: 2, pageSize: 2);
+        var result = Query("джаз", Day(4, 1), Day(4, 30), 2, 2);
 
         Assert.Equal(new[] { "Джаз 3", "Джаз 4" }, Titles(result));
         Assert.Equal(5, result.TotalCount);
@@ -454,5 +464,204 @@ public class EventServiceTests
         Assert.Equal("Исходное описание", unchanged.Description);
         Assert.Equal(Jan1, unchanged.StartAt);
         Assert.Equal(Jan1.AddHours(2), unchanged.EndAt);
+    }
+
+    // ---------- Граничные случаи: пагинация ----------
+
+    [Theory]
+    [Trait("Category", "Failure")]
+    [Trait("Feature", "Pagination")]
+    [InlineData(0, 10)]
+    [InlineData(-1, 10)]
+    [InlineData(1, 0)]
+    [InlineData(1, -5)]
+    public void GetAllEvents_NonPositivePageOrPageSize_ThrowsArgumentOutOfRangeException(int page, int pageSize)
+    {
+        Add("Событие", Jan1);
+
+        Assert.Throws<ArgumentOutOfRangeException>(() => Query(page: page, pageSize: pageSize));
+    }
+
+    [Fact]
+    [Trait("Category", "Success")]
+    [Trait("Feature", "Pagination")]
+    public void GetAllEvents_TotalIsExactMultipleOfPageSize_LastPageIsFullAndNextIsEmpty()
+    {
+        for (var i = 1; i <= 6; i++)
+            Add($"Событие {i}", Day(1, i));
+
+        var secondPage = Query(page: 2, pageSize: 3);
+        var thirdPage = Query(page: 3, pageSize: 3);
+
+        Assert.Equal(new[] { "Событие 4", "Событие 5", "Событие 6" }, Titles(secondPage));
+        Assert.Empty(thirdPage.Items);
+        Assert.Equal(6, thirdPage.TotalCount);
+    }
+
+    [Fact]
+    [Trait("Category", "Success")]
+    [Trait("Feature", "Pagination")]
+    public void GetAllEvents_PageSizeEqualsTotal_ReturnsEverythingOnFirstPage()
+    {
+        for (var i = 1; i <= 3; i++)
+            Add($"Событие {i}", Day(1, i));
+
+        var result = Query(page: 1, pageSize: 3);
+
+        Assert.Equal(3, result.Items.Count);
+        Assert.Empty(Query(page: 2, pageSize: 3).Items);
+    }
+
+    [Fact]
+    [Trait("Category", "Success")]
+    [Trait("Feature", "Pagination")]
+    public void GetAllEvents_PageSizeOne_ReturnsSingleEventPerPage()
+    {
+        for (var i = 1; i <= 3; i++)
+            Add($"Событие {i}", Day(1, i));
+
+        Assert.Equal(new[] { "Событие 1" }, Titles(Query(page: 1, pageSize: 1)));
+        Assert.Equal(new[] { "Событие 3" }, Titles(Query(page: 3, pageSize: 1)));
+        Assert.Empty(Query(page: 4, pageSize: 1).Items);
+    }
+
+    [Fact]
+    [Trait("Category", "Success")]
+    [Trait("Feature", "Pagination")]
+    public void GetAllEvents_EventsWithSameStartDate_AreOrderedByIdAndPagedWithoutDuplicates()
+    {
+        for (var i = 1; i <= 5; i++)
+            Add($"Событие {i}", Jan1);
+
+        var all = Query();
+        var ids = all.Items.Select(e => e.Id).ToArray();
+        var pagedIds = Enumerable.Range(1, 3)
+            .SelectMany(page => Query(page: page, pageSize: 2).Items)
+            .Select(e => e.Id)
+            .ToArray();
+
+        Assert.Equal(ids.OrderBy(id => id), ids);
+        Assert.Equal(ids, pagedIds);
+    }
+
+    // ---------- Граничные случаи: диапазон дат ----------
+
+    [Theory]
+    [Trait("Category", "Success")]
+    [Trait("Feature", "Filtering")]
+    [InlineData(-1, true)]
+    [InlineData(0, true)]
+    [InlineData(1, false)]
+    public void GetAllEvents_FromBoundary_IsInclusiveDownToTheTick(long tickOffset, bool expectedIncluded)
+    {
+        var start = Day(2, 1);
+        Add("Событие", start);
+
+        var result = Query(from: start.AddTicks(tickOffset));
+
+        Assert.Equal(expectedIncluded ? 1 : 0, result.TotalCount);
+    }
+
+    [Theory]
+    [Trait("Category", "Success")]
+    [Trait("Feature", "Filtering")]
+    [InlineData(-1, false)]
+    [InlineData(0, true)]
+    [InlineData(1, true)]
+    public void GetAllEvents_ToBoundary_IsInclusiveDownToTheTick(long tickOffset, bool expectedIncluded)
+    {
+        var start = Day(2, 1);
+        var created = Add("Событие", start);
+
+        var result = Query(to: created.EndAt.AddTicks(tickOffset));
+
+        Assert.Equal(expectedIncluded ? 1 : 0, result.TotalCount);
+    }
+
+    [Fact]
+    [Trait("Category", "Success")]
+    [Trait("Feature", "Filtering")]
+    public void GetAllEvents_RangeEqualsEventExactly_IncludesEvent()
+    {
+        var created = Add("Событие", Day(2, 1));
+
+        var result = Query(from: created.StartAt, to: created.EndAt);
+
+        Assert.Equal(new[] { "Событие" }, Titles(result));
+    }
+
+    [Fact]
+    [Trait("Category", "Success")]
+    [Trait("Feature", "Filtering")]
+    public void GetAllEvents_FromEqualsTo_ReturnsNothing()
+    {
+        var created = Add("Событие", Day(2, 1));
+
+        var result = Query(from: created.StartAt, to: created.StartAt);
+
+        Assert.Empty(result.Items);
+    }
+
+    [Fact]
+    [Trait("Category", "Success")]
+    [Trait("Feature", "Filtering")]
+    public void GetAllEvents_FromAfterTo_ReturnsNothing()
+    {
+        Add("Событие", Day(2, 1));
+
+        var result = Query(from: Day(12, 1), to: Day(1, 1));
+
+        Assert.Empty(result.Items);
+    }
+
+    [Fact]
+    [Trait("Category", "Success")]
+    [Trait("Feature", "Filtering")]
+    public void GetAllEvents_DateKindIsIgnoredWhenComparing()
+    {
+        var start = new DateTime(2026, 2, 1, 10, 0, 0, DateTimeKind.Unspecified);
+        Add("Событие", start);
+
+        var utcFrom = DateTime.SpecifyKind(start, DateTimeKind.Utc);
+
+        Assert.Equal(1, Query(from: utcFrom).TotalCount);
+    }
+
+    // ---------- Граничные случаи: обновление, удаление, идентификаторы ----------
+
+    [Fact]
+    [Trait("Category", "Failure")]
+    [Trait("Feature", "Update")]
+    public void UpdateEvent_EndEqualsStart_ThrowsValidationExceptionAndLeavesEventUnchanged()
+    {
+        var created = Add("Исходное название", Jan1);
+
+        Assert.Throws<ValidationException>(() =>
+            _service.UpdateEvent(created.Id, "Новое", null, Jan1, Jan1));
+
+        var unchanged = _service.GetEvent(created.Id);
+        Assert.Equal("Исходное название", unchanged.Title);
+        Assert.Equal(Jan1.AddHours(2), unchanged.EndAt);
+    }
+
+    [Fact]
+    [Trait("Category", "Failure")]
+    [Trait("Feature", "Delete")]
+    public void DeleteEvent_CalledTwice_SecondCallThrowsNotFoundException()
+    {
+        var created = Add("Событие", Jan1);
+        _service.DeleteEvent(created.Id);
+
+        Assert.Throws<NotFoundException>(() => _service.DeleteEvent(created.Id));
+    }
+
+    [Fact]
+    [Trait("Category", "Failure")]
+    [Trait("Feature", "Read")]
+    public void GetEvent_EmptyGuid_ThrowsNotFoundException()
+    {
+        Add("Событие", Jan1);
+
+        Assert.Throws<NotFoundException>(() => _service.GetEvent(Guid.Empty));
     }
 }

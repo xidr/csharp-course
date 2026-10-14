@@ -50,5 +50,6 @@ public interface IEventService {
     /// <param name="page">Номер страницы (начиная с 1)</param>
     /// <param name="pageSize">Количество элементов на странице</param>
     /// <returns>Запрошенная страница событий и общее количество подходящих событий</returns>
+    /// <exception cref="ArgumentOutOfRangeException"><paramref name="page"/> или <paramref name="pageSize"/> меньше 1</exception>
     PaginatedResult<Event> GetAllEvents(string? title, DateTime? from, DateTime? to, int page, int pageSize);
 }

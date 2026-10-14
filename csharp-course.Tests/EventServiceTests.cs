@@ -2,6 +2,7 @@ using System.ComponentModel.DataAnnotations;
 
 namespace csharp_course.Tests;
 
+[Trait("Service", "EventService")]
 public class EventServiceTests
 {
     private static readonly DateTime Jan1 = new(2026, 1, 1, 10, 0, 0);
@@ -24,6 +25,8 @@ public class EventServiceTests
     // ---------- Успешные сценарии ----------
 
     [Fact]
+    [Trait("Category", "Success")]
+    [Trait("Feature", "Create")]
     public void CreateEvent_ValidData_ReturnsEventAndStoresIt()
     {
         var created = _service.CreateEvent("Концерт", "Описание", Jan1, Jan1.AddHours(3));
@@ -37,6 +40,8 @@ public class EventServiceTests
     }
 
     [Fact]
+    [Trait("Category", "Success")]
+    [Trait("Feature", "Create")]
     public void CreateEvent_NullDescription_StoresEmptyString()
     {
         var created = _service.CreateEvent("Концерт", null, Jan1, Jan1.AddHours(1));
@@ -45,6 +50,8 @@ public class EventServiceTests
     }
 
     [Fact]
+    [Trait("Category", "Success")]
+    [Trait("Feature", "Create")]
     public void CreateEvent_CalledTwice_GeneratesDifferentIds()
     {
         var first = Add("Первое", Jan1);
@@ -54,6 +61,8 @@ public class EventServiceTests
     }
 
     [Fact]
+    [Trait("Category", "Success")]
+    [Trait("Feature", "Read")]
     public void GetAllEvents_NoFilters_ReturnsAllEvents()
     {
         Add("A", Day(1, 1));
@@ -67,6 +76,8 @@ public class EventServiceTests
     }
 
     [Fact]
+    [Trait("Category", "Success")]
+    [Trait("Feature", "Read")]
     public void GetAllEvents_NoEvents_ReturnsEmptyResult()
     {
         var result = Query();
@@ -76,6 +87,8 @@ public class EventServiceTests
     }
 
     [Fact]
+    [Trait("Category", "Success")]
+    [Trait("Feature", "Read")]
     public void GetAllEvents_ReturnsEventsOrderedByStartDate()
     {
         Add("Позже", Day(3, 1));
@@ -88,6 +101,8 @@ public class EventServiceTests
     }
 
     [Fact]
+    [Trait("Category", "Success")]
+    [Trait("Feature", "Read")]
     public void GetEvent_ExistingId_ReturnsEvent()
     {
         var created = Add("Событие", Jan1);
@@ -99,6 +114,8 @@ public class EventServiceTests
     }
 
     [Fact]
+    [Trait("Category", "Success")]
+    [Trait("Feature", "Update")]
     public void UpdateEvent_ExistingId_UpdatesAllFields()
     {
         var created = Add("Старое название", Jan1, "Старое описание");
@@ -116,6 +133,8 @@ public class EventServiceTests
     }
 
     [Fact]
+    [Trait("Category", "Success")]
+    [Trait("Feature", "Update")]
     public void UpdateEvent_ExistingId_DoesNotCreateNewEvent()
     {
         var created = Add("Событие", Jan1);
@@ -126,6 +145,8 @@ public class EventServiceTests
     }
 
     [Fact]
+    [Trait("Category", "Success")]
+    [Trait("Feature", "Delete")]
     public void DeleteEvent_ExistingId_RemovesEvent()
     {
         var kept = Add("Останется", Day(1, 1));
@@ -140,6 +161,8 @@ public class EventServiceTests
     // ---------- Фильтрация ----------
 
     [Theory]
+    [Trait("Category", "Success")]
+    [Trait("Feature", "Filtering")]
     [InlineData("джаз")]
     [InlineData("ДЖАЗ")]
     [InlineData("ЖаЗ")]
@@ -155,6 +178,8 @@ public class EventServiceTests
     }
 
     [Fact]
+    [Trait("Category", "Success")]
+    [Trait("Feature", "Filtering")]
     public void GetAllEvents_FilterByTitle_NoMatch_ReturnsEmpty()
     {
         Add("Концерт", Day(1, 1));
@@ -166,6 +191,8 @@ public class EventServiceTests
     }
 
     [Theory]
+    [Trait("Category", "Success")]
+    [Trait("Feature", "Filtering")]
     [InlineData(null)]
     [InlineData("")]
     [InlineData("   ")]
@@ -180,6 +207,8 @@ public class EventServiceTests
     }
 
     [Fact]
+    [Trait("Category", "Success")]
+    [Trait("Feature", "Filtering")]
     public void GetAllEvents_FilterByFrom_ReturnsEventsStartingNotEarlier()
     {
         Add("Раньше", Day(1, 1));
@@ -192,6 +221,8 @@ public class EventServiceTests
     }
 
     [Fact]
+    [Trait("Category", "Success")]
+    [Trait("Feature", "Filtering")]
     public void GetAllEvents_FilterByTo_ReturnsEventsEndingNotLater()
     {
         Add("Раньше", Day(1, 1));                                            // заканчивается 1 янв 12:00
@@ -204,6 +235,8 @@ public class EventServiceTests
     }
 
     [Fact]
+    [Trait("Category", "Success")]
+    [Trait("Feature", "Filtering")]
     public void GetAllEvents_FilterByFromAndTo_ReturnsEventsInsideRange()
     {
         Add("До диапазона", Day(1, 1));
@@ -217,6 +250,8 @@ public class EventServiceTests
     }
 
     [Fact]
+    [Trait("Category", "Success")]
+    [Trait("Feature", "Filtering")]
     public void GetAllEvents_EventStartingInsideButEndingAfterTo_IsExcluded()
     {
         _service.CreateEvent("Выходит за границу", null, Day(2, 1), Day(3, 5));
@@ -229,6 +264,8 @@ public class EventServiceTests
     // ---------- Пагинация ----------
 
     [Fact]
+    [Trait("Category", "Success")]
+    [Trait("Feature", "Pagination")]
     public void GetAllEvents_Pagination_ReturnsRequestedPage()
     {
         for (var i = 1; i <= 7; i++)
@@ -243,6 +280,8 @@ public class EventServiceTests
     }
 
     [Fact]
+    [Trait("Category", "Success")]
+    [Trait("Feature", "Pagination")]
     public void GetAllEvents_Pagination_LastPageMayBeIncomplete()
     {
         for (var i = 1; i <= 7; i++)
@@ -255,6 +294,8 @@ public class EventServiceTests
     }
 
     [Fact]
+    [Trait("Category", "Success")]
+    [Trait("Feature", "Pagination")]
     public void GetAllEvents_Pagination_PageBeyondEnd_ReturnsEmptyItemsButKeepsTotal()
     {
         for (var i = 1; i <= 3; i++)
@@ -267,6 +308,8 @@ public class EventServiceTests
     }
 
     [Fact]
+    [Trait("Category", "Success")]
+    [Trait("Feature", "Pagination")]
     public void GetAllEvents_Pagination_PagesDoNotOverlapAndCoverEverything()
     {
         for (var i = 1; i <= 10; i++)
@@ -281,6 +324,8 @@ public class EventServiceTests
     }
 
     [Fact]
+    [Trait("Category", "Success")]
+    [Trait("Feature", "Pagination")]
     public void GetAllEvents_Pagination_HugePageNumber_DoesNotOverflow()
     {
         Add("Событие", Jan1);
@@ -294,6 +339,8 @@ public class EventServiceTests
     // ---------- Комбинированная фильтрация ----------
 
     [Fact]
+    [Trait("Category", "Success")]
+    [Trait("Feature", "Combined")]
     public void GetAllEvents_CombinedFilters_AppliesAllOfThemWithAnd()
     {
         Add("Джаз зимой", Day(1, 10));
@@ -308,6 +355,8 @@ public class EventServiceTests
     }
 
     [Fact]
+    [Trait("Category", "Success")]
+    [Trait("Feature", "Combined")]
     public void GetAllEvents_CombinedFiltersWithPagination_TotalCountIgnoresPaging()
     {
         for (var i = 1; i <= 5; i++)
@@ -324,12 +373,16 @@ public class EventServiceTests
     // ---------- Неуспешные сценарии ----------
 
     [Fact]
+    [Trait("Category", "Failure")]
+    [Trait("Feature", "Read")]
     public void GetEvent_NonExistingId_ThrowsNotFoundException()
     {
         Assert.Throws<NotFoundException>(() => _service.GetEvent(Guid.NewGuid()));
     }
 
     [Fact]
+    [Trait("Category", "Failure")]
+    [Trait("Feature", "Update")]
     public void UpdateEvent_NonExistingId_ThrowsNotFoundException()
     {
         Assert.Throws<NotFoundException>(() =>
@@ -337,6 +390,8 @@ public class EventServiceTests
     }
 
     [Fact]
+    [Trait("Category", "Failure")]
+    [Trait("Feature", "Update")]
     public void UpdateEvent_NonExistingId_DoesNotCreateEvent()
     {
         Assert.Throws<NotFoundException>(() =>
@@ -346,12 +401,16 @@ public class EventServiceTests
     }
 
     [Fact]
+    [Trait("Category", "Failure")]
+    [Trait("Feature", "Delete")]
     public void DeleteEvent_NonExistingId_ThrowsNotFoundException()
     {
         Assert.Throws<NotFoundException>(() => _service.DeleteEvent(Guid.NewGuid()));
     }
 
     [Fact]
+    [Trait("Category", "Failure")]
+    [Trait("Feature", "Create")]
     public void CreateEvent_EndBeforeStart_ThrowsValidationException()
     {
         Assert.Throws<ValidationException>(() =>
@@ -361,6 +420,8 @@ public class EventServiceTests
     }
 
     [Fact]
+    [Trait("Category", "Failure")]
+    [Trait("Feature", "Create")]
     public void CreateEvent_EndEqualsStart_ThrowsValidationException()
     {
         Assert.Throws<ValidationException>(() =>
@@ -368,6 +429,8 @@ public class EventServiceTests
     }
 
     [Fact]
+    [Trait("Category", "Failure")]
+    [Trait("Feature", "Update")]
     public void UpdateEvent_EndBeforeStart_ThrowsValidationException()
     {
         var created = Add("Событие", Jan1);
@@ -377,6 +440,8 @@ public class EventServiceTests
     }
 
     [Fact]
+    [Trait("Category", "Failure")]
+    [Trait("Feature", "Update")]
     public void UpdateEvent_EndBeforeStart_LeavesEventUnchanged()
     {
         var created = Add("Исходное название", Jan1, "Исходное описание");

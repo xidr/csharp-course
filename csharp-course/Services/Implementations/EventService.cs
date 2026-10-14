@@ -1,4 +1,5 @@
 using System.Collections.Concurrent;
+using System.ComponentModel.DataAnnotations;
 
 namespace csharp_course;
 
@@ -7,34 +8,44 @@ namespace csharp_course;
 /// </summary>
 public class EventService : IEventService
 {
-    private readonly ConcurrentDictionary<Guid, Event> _events = new();
+    
+    private readonly IEventRepository _eventRepository;
+
+    public EventService(IEventRepository eventRepository)
+    {
+        _eventRepository = eventRepository;
+    }
 
     /// <inheritdoc />
     public Event CreateEvent(string title, string? description, DateTime startDate, DateTime endDate)
     {
         var newEventId = Guid.NewGuid();
         var newEvent = new Event(newEventId, title, startDate, endDate, description);
-        _events.TryAdd(newEventId, newEvent);
-
-        return newEvent;
+        if (_eventRepository.TryAdd(newEventId, newEvent))
+        { 
+            return newEvent;
+        }
+        
+        throw new InvalidOperationException($"Не удалось создать событие: {newEventId} уже существует");
     }
 
     /// <inheritdoc />
     public void DeleteEvent(Guid eventId)
     {
-        if (!_events.TryRemove(eventId, out _))
+        if (!_eventRepository.TryRemove(eventId))
+        {
             throw new NotFoundException($"Событие {eventId} не найдено");
+        }
     }
 
     /// <inheritdoc />
     public void UpdateEvent(Guid eventId, string title, string? description, DateTime startDate, DateTime endDate)
     {
-        while (_events.TryGetValue(eventId, out var current))
-        {
-            var updated = new Event(eventId, title, startDate, endDate, description);
+        var updatedEvent = new Event(eventId, title, startDate, endDate, description);
 
-            if (_events.TryUpdate(eventId, updated, current))
-                return;
+        if (_eventRepository.TryUpdate(eventId, updatedEvent))
+        {
+            return;
         }
 
         throw new NotFoundException($"Событие {eventId} не найдено");
@@ -43,12 +54,14 @@ public class EventService : IEventService
     /// <inheritdoc />
     public Event GetEvent(Guid eventId)
     {
-        var foundEvent = _events.GetValueOrDefault(eventId);
-
-        if (foundEvent is null)
-            throw new NotFoundException($"Событие {eventId} не найдено");
-
-        return foundEvent;
+        if (_eventRepository.TryGet(eventId, out var foundEvent))
+        {
+            if (foundEvent is null)
+                throw new InvalidOperationException($"Событие {eventId} повреждено: значение в хранилище равно null");
+            return foundEvent;
+        }
+        
+        throw new NotFoundException($"Событие {eventId} не найдено");
     }
 
     /// <inheritdoc />
@@ -57,25 +70,12 @@ public class EventService : IEventService
         ArgumentOutOfRangeException.ThrowIfLessThan(page, 1);
         ArgumentOutOfRangeException.ThrowIfLessThan(pageSize, 1);
 
-        IEnumerable<Event> events = _events.Values;
+        if (_eventRepository.TryGetAll(title, from, to, page, pageSize, out var paginatedResult))
+        {
+            return paginatedResult;
+        }
 
-        if (!string.IsNullOrWhiteSpace(title))
-            events = events.Where(e => e.Title.Contains(title, StringComparison.OrdinalIgnoreCase));
+        throw new InvalidOperationException("Что-то пошло не так");
 
-        if (from.HasValue)
-            events = events.Where(e => e.StartAt >= from.Value);
-
-        if (to.HasValue)
-            events = events.Where(e => e.EndAt <= to.Value);
-
-        var filtered = events
-            .OrderBy(e => e.StartAt)
-            .ThenBy(e => e.Id)
-            .ToArray();
-
-        var skip = (int)Math.Min((long)(page - 1) * pageSize, int.MaxValue);
-        var items = filtered.Skip(skip).Take(pageSize).ToArray();
-
-        return new PaginatedResult<Event>(items, filtered.Length, page, pageSize);
     }
 }

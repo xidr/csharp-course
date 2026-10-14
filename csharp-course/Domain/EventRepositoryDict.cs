@@ -1,0 +1,66 @@
+using System.Collections.Concurrent;
+
+namespace csharp_course;
+
+public class EventRepositoryDict : IEventRepository
+{
+    private readonly ConcurrentDictionary<Guid, Event> _events = new();
+    
+    
+    public bool TryAdd(Guid newEventId, Event newEvent)
+    {
+        return _events.TryAdd(newEventId, newEvent);
+    }
+
+    public bool TryRemove(Guid eventId)
+    {
+        return _events.TryRemove(eventId, out _); 
+    }
+
+    public bool TryGet(Guid eventId, out Event? foundEvent)
+    {
+        return _events.TryGetValue(eventId, out foundEvent);
+    }
+
+    public bool TryUpdate(Guid eventId, Event newEvent)
+    {
+        while (_events.TryGetValue(eventId, out var current))
+        {
+            if (_events.TryUpdate(eventId, newEvent, current))
+            {
+                return true;
+            }
+        }
+        
+        return false;
+        
+    }
+
+    public bool TryGetAll(string? title, DateTime? from, DateTime? to, int page, int pageSize, out PaginatedResult<Event> paginatedResult)
+    {
+        IEnumerable<Event> events = _events.Values;
+        
+        if (!string.IsNullOrWhiteSpace(title))
+            events = events.Where(e => e.Title.Contains(title, StringComparison.OrdinalIgnoreCase));
+
+        if (from.HasValue)
+            events = events.Where(e => e.StartAt >= from.Value);
+
+        if (to.HasValue)
+            events = events.Where(e => e.EndAt <= to.Value);
+        
+        var filtered = events
+            .OrderBy(e => e.StartAt)
+            .ThenBy(e => e.Id)
+            .ToArray();
+
+        var skip = (int)Math.Min((long)(page - 1) * pageSize, int.MaxValue);
+        var items = filtered.Skip(skip).Take(pageSize).ToArray();
+        
+        paginatedResult = new PaginatedResult<Event>(items, filtered.Length, page, pageSize);
+
+        return true;
+    }
+
+
+}

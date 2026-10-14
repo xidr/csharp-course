@@ -4,13 +4,17 @@ using System.ComponentModel.DataAnnotations;
 namespace csharp_course;
 
 /// <summary>
-///     Потокобезопасная реализация сервиса событий с хранением в памяти
+///     Реализация сервиса событий, использующая <see cref="IEventRepository"/> для хранения данных
 /// </summary>
 public class EventService : IEventService
 {
     
     private readonly IEventRepository _eventRepository;
 
+    /// <summary>
+    ///     Создаёт сервис событий
+    /// </summary>
+    /// <param name="eventRepository">Хранилище событий</param>
     public EventService(IEventRepository eventRepository)
     {
         _eventRepository = eventRepository;

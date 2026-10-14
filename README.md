@@ -1,6 +1,7 @@
 # Events API Service
 
 Веб-сервис на ASP.NET Core (.NET 10) для управления событиями (мероприятиями).
+События хранятся в памяти приложения и теряются при его перезапуске.
 
 Деплой для теста доступен по ссылке: https://api.csharp-course.xidriel.me/swagger/index.html
 
@@ -37,6 +38,28 @@ dotnet run --project csharp-course
 После запуска приложения интерактивная документация Swagger UI доступна по адресу:
 - `http://localhost:5132/swagger` (или `https://localhost:7291/swagger`)
 
+### Тесты
+
+Юнит-тесты сервиса событий (`EventService`) лежат в проекте `csharp-course.Tests` (xUnit).
+Запуск всех тестов из корневого каталога репозитория:
+
+```bash
+dotnet test
+```
+
+Тесты размечены трейтами (`[Trait]`), поэтому их можно запускать выборочно:
+
+| Трейт | Значения |
+|---|---|
+| `Category` | `Success`, `Failure` |
+| `Feature` | `Create`, `Read`, `Update`, `Delete`, `Filtering`, `Pagination`, `Combined`, `Concurrency` |
+| `Service` | `EventService` |
+
+```bash
+dotnet test --filter "Category=Failure"
+dotnet test --filter "Feature=Pagination"
+```
+
 ### Deployment
 
 В корне репозитория лежит скрипт deploy.sh для деплоя приложения на сервер.
@@ -44,6 +67,31 @@ dotnet run --project csharp-course
 а также создать файл `.envrc` в корне репозитория с переменными окружения. Пример находится в файле `.envrc.example`
 
 
+
+---
+
+## 🧱 Структура проекта
+
+```
+csharp-course/             # веб-приложение
+├── Controllers/           # EventsController — HTTP-эндпоинты
+├── Contracts/
+│   ├── Requests/          # EventRequest, EventsFilterRequest
+│   └── Responses/         # EventResponse, PaginatedResult<T>
+├── Domain/                # Event, IEventRepository, EventRepositoryDict
+├── Services/              # IEventService, EventService — бизнес-логика
+├── Middleware/            # GlobalExceptionHandlingMiddleware
+└── Utils/                 # ApiResult, NotFoundException
+csharp-course.Tests/       # юнит-тесты (xUnit)
+```
+
+Зависимости подключаются через DI (см. `Program.cs`):
+
+- `IEventService` → `EventService`
+- `IEventRepository` → `EventRepositoryDict` (хранилище в памяти на `ConcurrentDictionary`)
+
+Оба сервиса зарегистрированы как singleton, поскольку хранилище держит данные в памяти приложения.
+Чтобы сменить способ хранения, достаточно реализовать `IEventRepository` и поменять регистрацию.
 
 ---
 
@@ -131,7 +179,7 @@ HTTP-код передаётся только в статусе ответа, в
 
 | Исключение | HTTP-статус | Уровень логирования |
 |---|---|---|
-| `ValidationException` | `400 Bad Request` | `Information` |
+| `ValidationException` (например, нарушено правило «дата окончания позже даты начала» в доменной модели) | `400 Bad Request` | `Information` |
 | `NotFoundException` | `404 Not Found` | `Information` |
 | любое другое | `500 Internal Server Error` | `Error` (со стеком вызовов) |
 

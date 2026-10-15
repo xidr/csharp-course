@@ -6,6 +6,7 @@ using Microsoft.AspNetCore.Mvc;
 
 var builder = WebApplication.CreateBuilder(args);
 
+
 builder.Services.Configure<ForwardedHeadersOptions>(options =>
 {
     options.ForwardedHeaders = ForwardedHeaders.XForwardedFor | ForwardedHeaders.XForwardedProto;
@@ -25,27 +26,32 @@ builder.Services.AddControllers()
                 .ToDictionary(
                     kv => kv.Key,
                     kv => kv.Value!.Errors.Select(e => e.ErrorMessage));
-
-
-            var apiResult = new ApiResultBadRequest()
-            {
-                Success = false,
-                Errors = errors,
-            };
-
+            
 
             var logger = context.HttpContext.RequestServices
                 .GetRequiredService<ILogger<Program>>();
 
             var errorsString = string.Join(",", errors.Select(kv => $"{kv.Key}: {string.Join(", ", kv.Value)}"));
 
-            logger.LogWarning($"Ошибка валидации: {errors}", errorsString);
+            logger.LogInformation(
+                "Ошибка с кодом {StatusCode}: {Message}. Method={Method}, Path={Path}, RequestId={RequestId}",
+                StatusCodes.Status400BadRequest,
+                errorsString,
+                context.HttpContext.Request.Method,
+                context.HttpContext.Request.Path,
+                context.HttpContext.Request.Headers["x-request-id"]);
+            
+            var problem = new ValidationProblemDetails(context.ModelState)
+            {
+                Status = StatusCodes.Status400BadRequest
+            };
 
-            return new BadRequestObjectResult(apiResult);
+            return new BadRequestObjectResult(problem);
         };
     });
 
 builder.Services.AddHttpLogging(o => { });
+builder.Services.AddSingleton<IEventRepository, EventRepositoryDict>();
 builder.Services.AddSingleton<IEventService, EventService>();
 
 builder.Services.AddSwaggerGen(options =>
@@ -59,6 +65,7 @@ var app = builder.Build();
 
 app.UseForwardedHeaders();
 app.UseHttpLogging();
+app.UseGlobalExceptionHandling();
 app.UseStaticFiles("/static");
 app.UseRouting();
 app.MapControllers();

@@ -44,7 +44,7 @@ public class EventRepositoryDict : IEventRepository
     }
 
     /// <inheritdoc />
-    public bool TryGetAll(string? title, DateTime? from, DateTime? to, int page, int pageSize, out PaginatedResult<Event> paginatedResult)
+    public PaginatedResult<Event> TryGetAll(string? title, DateTime? from, DateTime? to, int page, int pageSize)
     {
         IEnumerable<Event> events = _events.Values;
         
@@ -56,18 +56,17 @@ public class EventRepositoryDict : IEventRepository
 
         if (to.HasValue)
             events = events.Where(e => e.EndAt <= to.Value);
-        
+
         var filtered = events
             .OrderBy(e => e.StartAt)
-            .ThenBy(e => e.Id)
-            .ToArray();
+            .ThenBy(e => e.Id);
 
         var skip = (int)Math.Min((long)(page - 1) * pageSize, int.MaxValue);
         var items = filtered.Skip(skip).Take(pageSize).ToArray();
         
-        paginatedResult = new PaginatedResult<Event>(items, filtered.Length, page, pageSize);
+        var result = new PaginatedResult<Event>(items, filtered.Count(), page, pageSize);
 
-        return true;
+        return result;
     }
 
 

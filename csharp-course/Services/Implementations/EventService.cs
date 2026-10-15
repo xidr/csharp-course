@@ -74,12 +74,8 @@ public class EventService : IEventService
         ArgumentOutOfRangeException.ThrowIfLessThan(page, 1);
         ArgumentOutOfRangeException.ThrowIfLessThan(pageSize, 1);
 
-        if (_eventRepository.TryGetAll(title, from, to, page, pageSize, out var paginatedResult))
-        {
-            return paginatedResult;
-        }
-
-        throw new InvalidOperationException("Что-то пошло не так");
-
+        var result = _eventRepository.TryGetAll(title, from, to, page, pageSize);
+        
+        return result;
     }
 }

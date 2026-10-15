@@ -45,7 +45,6 @@ public interface IEventRepository
     /// <param name="to">События, заканчивающиеся не позже указанной даты</param>
     /// <param name="page">Номер страницы (начиная с 1)</param>
     /// <param name="pageSize">Количество элементов на странице</param>
-    /// <param name="events">Запрошенная страница и общее количество подходящих событий</param>
-    /// <returns><c>true</c>, если выборка выполнена</returns>
-    bool TryGetAll(string? title, DateTime? from, DateTime? to, int page, int pageSize, out PaginatedResult<Event> events);
+    /// <returns>Пангинированный результат</returns>
+    PaginatedResult<Event> TryGetAll(string? title, DateTime? from, DateTime? to, int page, int pageSize);
 }

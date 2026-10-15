@@ -54,6 +54,18 @@ public class GlobalExceptionHandlingMiddleware
         {
             await _next(httpContext);
         }
+        catch (OperationCanceledException)
+            when (httpContext.RequestAborted.IsCancellationRequested)
+        {
+            _logger.LogInformation(
+                "Запрос отменён. Method={Method}, Path={Path}",
+                httpContext.Request.Method,
+                httpContext.Request.Path);
+
+            if (!httpContext.Response.HasStarted)
+                httpContext.Response.StatusCode =
+                    StatusCodes.Status499ClientClosedRequest;
+        }
         catch (Exception ex)
         {
             await HandleException(httpContext, ex);
@@ -63,11 +75,11 @@ public class GlobalExceptionHandlingMiddleware
     private async Task HandleException(HttpContext httpContext, Exception ex)
     {
         var statusCode = MapStatusCode(ex);
-        
+
         var logLevel = statusCode >= StatusCodes.Status500InternalServerError
             ? LogLevel.Error
             : LogLevel.Information;
-        
+
         _logger.Log(
             logLevel,
             statusCode >= StatusCodes.Status500InternalServerError ? ex : null,
@@ -100,6 +112,7 @@ public class GlobalExceptionHandlingMiddleware
     {
         return ex switch
         {
+            BadHttpRequestException badRequest => badRequest.StatusCode,
             ValidationException => StatusCodes.Status400BadRequest,
             NotFoundException => StatusCodes.Status404NotFound,
             _ => StatusCodes.Status500InternalServerError

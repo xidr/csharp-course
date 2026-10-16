@@ -28,8 +28,8 @@ public static class GlobalExceptionHandlingMiddlewareExtensions
 /// </summary>
 public class GlobalExceptionHandlingMiddleware
 {
-    private readonly RequestDelegate _next;
     private readonly ILogger<GlobalExceptionHandlingMiddleware> _logger;
+    private readonly RequestDelegate _next;
 
     /// <summary>
     ///     Создаёт middleware глобальной обработки ошибок

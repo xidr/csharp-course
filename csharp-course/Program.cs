@@ -26,7 +26,7 @@ builder.Services.AddControllers()
                 .ToDictionary(
                     kv => kv.Key,
                     kv => kv.Value!.Errors.Select(e => e.ErrorMessage));
-            
+
 
             var logger = context.HttpContext.RequestServices
                 .GetRequiredService<ILogger<Program>>();
@@ -40,7 +40,7 @@ builder.Services.AddControllers()
                 context.HttpContext.Request.Method,
                 context.HttpContext.Request.Path,
                 context.HttpContext.Request.Headers["x-request-id"]);
-            
+
             var problem = new ValidationProblemDetails(context.ModelState)
             {
                 Status = StatusCodes.Status400BadRequest

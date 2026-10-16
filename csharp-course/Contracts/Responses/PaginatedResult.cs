@@ -1,7 +1,7 @@
 namespace csharp_course;
 
 /// <summary>
-/// Результат постраничной выборки
+///     Результат постраничной выборки
 /// </summary>
 /// <typeparam name="T">Тип элементов на странице</typeparam>
 /// <param name="Items">Элементы текущей страницы</param>

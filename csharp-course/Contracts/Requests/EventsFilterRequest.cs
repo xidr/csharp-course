@@ -4,7 +4,7 @@ using System.ComponentModel.DataAnnotations;
 namespace csharp_course;
 
 /// <summary>
-/// Параметры фильтрации и постраничного вывода списка событий
+///     Параметры фильтрации и постраничного вывода списка событий
 /// </summary>
 public record EventsFilterRequest : IValidatableObject
 {
@@ -28,7 +28,7 @@ public record EventsFilterRequest : IValidatableObject
     public int PageSize { get; init; } = 10;
 
     /// <summary>
-    /// Проверяет, что дата начала диапазона не позже даты его окончания
+    ///     Проверяет, что дата начала диапазона не позже даты его окончания
     /// </summary>
     /// <param name="validationContext">Контекст валидации</param>
     /// <returns>Ошибки валидации; пусто, если данные корректны</returns>

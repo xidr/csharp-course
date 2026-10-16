@@ -10,5 +10,7 @@ public class NotFoundException : Exception
     ///     Создаёт исключение с описанием ненайденного ресурса
     /// </summary>
     /// <param name="message">Сообщение об ошибке</param>
-    public NotFoundException(string message) : base(message) { }
+    public NotFoundException(string message) : base(message)
+    {
+    }
 }

@@ -1,14 +1,10 @@
-using System.Collections.Concurrent;
-using System.ComponentModel.DataAnnotations;
-
 namespace csharp_course;
 
 /// <summary>
-///     Реализация сервиса событий, использующая <see cref="IEventRepository"/> для хранения данных
+///     Реализация сервиса событий, использующая <see cref="IEventRepository" /> для хранения данных
 /// </summary>
 public class EventService : IEventService
 {
-    
     private readonly IEventRepository _eventRepository;
 
     /// <summary>
@@ -25,21 +21,15 @@ public class EventService : IEventService
     {
         var newEventId = Guid.NewGuid();
         var newEvent = new Event(newEventId, title, startDate, endDate, description);
-        if (_eventRepository.TryAdd(newEventId, newEvent))
-        { 
-            return newEvent;
-        }
-        
+        if (_eventRepository.TryAdd(newEventId, newEvent)) return newEvent;
+
         throw new InvalidOperationException($"Не удалось создать событие: {newEventId} уже существует");
     }
 
     /// <inheritdoc />
     public void DeleteEvent(Guid eventId)
     {
-        if (!_eventRepository.TryRemove(eventId))
-        {
-            throw new NotFoundException($"Событие {eventId} не найдено");
-        }
+        if (!_eventRepository.TryRemove(eventId)) throw new NotFoundException($"Событие {eventId} не найдено");
     }
 
     /// <inheritdoc />
@@ -47,10 +37,7 @@ public class EventService : IEventService
     {
         var updatedEvent = new Event(eventId, title, startDate, endDate, description);
 
-        if (_eventRepository.TryUpdate(eventId, updatedEvent))
-        {
-            return;
-        }
+        if (_eventRepository.TryUpdate(eventId, updatedEvent)) return;
 
         throw new NotFoundException($"Событие {eventId} не найдено");
     }
@@ -64,7 +51,7 @@ public class EventService : IEventService
                 throw new InvalidOperationException($"Событие {eventId} повреждено: значение в хранилище равно null");
             return foundEvent;
         }
-        
+
         throw new NotFoundException($"Событие {eventId} не найдено");
     }
 
@@ -75,7 +62,7 @@ public class EventService : IEventService
         ArgumentOutOfRangeException.ThrowIfLessThan(pageSize, 1);
 
         var result = _eventRepository.TryGetAll(title, from, to, page, pageSize);
-        
+
         return result;
     }
 }

@@ -3,6 +3,7 @@ using System.Reflection;
 using csharp_course;
 using Microsoft.AspNetCore.HttpOverrides;
 using Microsoft.AspNetCore.Mvc;
+using System.Text.Json.Serialization;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -15,6 +16,7 @@ builder.Services.Configure<ForwardedHeadersOptions>(options =>
 
 
 builder.Services.AddControllers()
+    .AddJsonOptions(options => options.JsonSerializerOptions.Converters.Add(new JsonStringEnumConverter()))
     .ConfigureApiBehaviorOptions(options =>
     {
         options.SuppressModelStateInvalidFilter = false;
@@ -53,6 +55,11 @@ builder.Services.AddControllers()
 builder.Services.AddHttpLogging(o => { });
 builder.Services.AddSingleton<IEventRepository, EventRepositoryInMemoryDict>();
 builder.Services.AddSingleton<IEventService, EventService>();
+
+builder.Services.AddSingleton<IBookingRepository, BookingRepositoryInMemoryDict>();
+builder.Services.AddSingleton<IBookingService, BookingService>();
+
+builder.Services.AddHostedService<BookingBackgroundService>();
 
 builder.Services.AddSwaggerGen(options =>
 {

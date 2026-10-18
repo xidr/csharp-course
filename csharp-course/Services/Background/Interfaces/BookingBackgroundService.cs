@@ -27,33 +27,41 @@ public class BookingBackgroundService : BackgroundService
         {
             try
             {
-                if (_taskQueue.TryDequeue(out var task))
+                var pendingBookings = await _bookingService.GetPendingAsync(stoppingToken);
+                foreach (var pendingBooking in pendingBookings)
                 {
                     _logger.LogInformation(
-                        "Начат процесс генерации брони {TaskId}, время начала обработки: {StartedAt}",
-                        task.BookingId, task.StartedAt);
-
-                    // Имитация долгой генерации брони
+                        "Начат процесс генерации брони {Id}, время получения: {CreatedAt}, время начала обработки: {StartedAt}",
+                        pendingBooking.Id, pendingBooking.CreatedAt, DateTime.Now);
+                    
                     await Task.Delay(TimeSpan.FromMilliseconds(_ms), stoppingToken);
                     
-                    _bookingService
+                    var processedAt = DateTime.Now;
+                    var processedBooking = pendingBooking with
+                    {
+                        Status = Booking.BookingStatus.Confirmed,
+                        ProcessedAt = processedAt
+                    };
+
+                    await _bookingService.TryUpdateBookingByIdAsync(processedBooking, stoppingToken);
                     
                     _logger.LogInformation(
-                        "Отчёт {TaskId} сгенерирован успешно", task.Id);
+                        "Обработка брони {Id} завершена, время завершения: {ProcessedAt}, статус: {Status}",
+                        pendingBooking.Id, pendingBooking.ProcessedAt, processedBooking.Status);
                 }
             }
             catch (OperationCanceledException) when (stoppingToken.IsCancellationRequested)
             {
                 break;
             }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "Ошибка при генерации отчёта");
-            }
+            // catch (Exception ex)
+            // {
+            //     _logger.LogError(ex, "Ошибка при генерации отчёта");
+            // }
 
             await Task.Delay(TimeSpan.FromSeconds(2), stoppingToken);
         }
 
-        _logger.LogInformation("ReportGenerationService остановлен");
+        _logger.LogInformation("BookingBackgroundService остановлен");
     }
 }

@@ -26,7 +26,6 @@ public class BookingRepositoryInMemoryDict : IBookingRepository
         
         while (_bookings.TryGetValue(bookingId, out var current))
         {
-            
             var updatedBooking = new Booking(current.Id, current.EventId, newBookingData.Status, current.CreatedAt, newBookingData.ProcessedAt);
             if (_bookings.TryUpdate(bookingId, updatedBooking, current))
                 return Task.FromResult(true);

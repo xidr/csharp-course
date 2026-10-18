@@ -2,12 +2,13 @@ namespace csharp_course;
 
 public interface IBookingService
 {
+
+    Task<Booking?> CreateBookingAsync(Guid eventId, CancellationToken ct);
     
-    Event CreateBooking(string title, string? description, DateTime startDate, DateTime endDate);
+    Task<Booking?> GetBookingByIdAsync(Guid bookingId, CancellationToken ct);
     
-    Event GetBooking(Guid eventId);
+    Task<bool> TryUpdateBookingByIdAsync(Booking booking, CancellationToken ct);
     
-    void UpdateBooking(Guid eventId, string title, string? description, DateTime startDate, DateTime endDate);
-    
+    Task<IReadOnlyCollection<Booking>> GetPendingAsync(CancellationToken ct);
     
 }

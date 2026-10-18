@@ -5,7 +5,7 @@ namespace csharp_course;
 /// <summary>
 ///     Модель события
 /// </summary>
-public class Booking
+public record Booking
 {
     
     /// <summary>
@@ -18,11 +18,11 @@ public class Booking
     /// </summary>
     public Guid EventId { get; init; }
 
-    public BookingStatus Status { get; set; }
+    public BookingStatus Status { get; init; }
     
     public DateTime CreatedAt { get; init; }
     
-    public DateTime? ProcessedAt { get; set; }
+    public DateTime? ProcessedAt { get; init; }
     
     /// <summary>
     ///     Создаёт новую бронь

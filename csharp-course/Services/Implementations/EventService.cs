@@ -1,48 +1,68 @@
-using System.Collections.Concurrent;
-
 namespace csharp_course;
 
 /// <summary>
-/// Потокобезопасная реализация сервиса событий с хранением в памяти
+///     Реализация сервиса событий, использующая <see cref="IEventRepository" /> для хранения данных
 /// </summary>
-public class EventService : IEventService {
-    readonly ConcurrentDictionary<Guid, Event> _events = new();
+public class EventService : IEventService
+{
+    private readonly IEventRepository _eventRepository;
+
+    /// <summary>
+    ///     Создаёт сервис событий
+    /// </summary>
+    /// <param name="eventRepository">Хранилище событий</param>
+    public EventService(IEventRepository eventRepository)
+    {
+        _eventRepository = eventRepository;
+    }
 
     /// <inheritdoc />
-    public Event CreateEvent(string title, string? description, DateTime startDate, DateTime endDate) {
+    public Event CreateEvent(string title, string? description, DateTime startDate, DateTime endDate)
+    {
         var newEventId = Guid.NewGuid();
         var newEvent = new Event(newEventId, title, startDate, endDate, description);
-        _events.TryAdd(newEventId, newEvent);
-        
-        return newEvent;
+        if (_eventRepository.TryAdd(newEventId, newEvent)) return newEvent;
+
+        throw new InvalidOperationException($"Не удалось создать событие: {newEventId} уже существует");
     }
 
     /// <inheritdoc />
-    public bool DeleteEvent(Guid eventId) {
-        return _events.TryRemove(eventId, out _);
+    public void DeleteEvent(Guid eventId)
+    {
+        if (!_eventRepository.TryRemove(eventId)) throw new NotFoundException($"Событие {eventId} не найдено");
     }
 
     /// <inheritdoc />
-    public bool UpdateEvent(Guid eventId, string title, string? description, DateTime startDate, DateTime endDate) {
-        while (_events.TryGetValue(eventId, out var current))
+    public void UpdateEvent(Guid eventId, string title, string? description, DateTime startDate, DateTime endDate)
+    {
+        var updatedEvent = new Event(eventId, title, startDate, endDate, description);
+
+        if (_eventRepository.TryUpdate(eventId, updatedEvent)) return;
+
+        throw new NotFoundException($"Событие {eventId} не найдено");
+    }
+
+    /// <inheritdoc />
+    public Event GetEvent(Guid eventId)
+    {
+        if (_eventRepository.TryGet(eventId, out var foundEvent))
         {
-            var updated = new Event(eventId, title, startDate, endDate, description);
-
-            if (_events.TryUpdate(eventId, updated, current))
-                return true;
+            if (foundEvent is null)
+                throw new InvalidOperationException($"Событие {eventId} повреждено: значение в хранилище равно null");
+            return foundEvent;
         }
 
-        return false;
+        throw new NotFoundException($"Событие {eventId} не найдено");
     }
 
     /// <inheritdoc />
-    public Event? GetEvent(Guid eventId) {
-        return _events.GetValueOrDefault(eventId);
-    }
-
-    /// <inheritdoc />
-    public IReadOnlyCollection<Event> GetAllEvents()
+    public PaginatedResult<Event> GetAllEvents(string? title, DateTime? from, DateTime? to, int page, int pageSize)
     {
-        return _events.Values.ToArray();
+        ArgumentOutOfRangeException.ThrowIfLessThan(page, 1);
+        ArgumentOutOfRangeException.ThrowIfLessThan(pageSize, 1);
+
+        var result = _eventRepository.TryGetAll(title, from, to, page, pageSize);
+
+        return result;
     }
 }

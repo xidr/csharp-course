@@ -1,7 +1,7 @@
 namespace csharp_course;
 
 /// <summary>
-/// Ответ с данными мероприятия
+///     Ответ с данными мероприятия
 /// </summary>
 /// <param name="Id">Идентификатор мероприятия</param>
 /// <param name="Title">Название мероприятия</param>
@@ -14,18 +14,19 @@ public record EventResponse(
     string? Description,
     DateTime StartAt,
     DateTime EndAt);
-    
-    
+
 /// <summary>
-/// Методы преобразования событий
+///     Методы преобразования событий
 /// </summary>
 public static class EventMappings
 {
     /// <summary>
-    /// Преобразует событие в ответ API
+    ///     Преобразует событие в ответ API
     /// </summary>
     /// <param name="e">Событие</param>
     /// <returns>Ответ с данными события</returns>
-    public static EventResponse ToResponse(this Event e) =>
-        new(e.Id, e.Title, e.Description, e.StartAt, e.EndAt);
+    public static EventResponse ToResponse(this Event e)
+    {
+        return new EventResponse(e.Id, e.Title, e.Description, e.StartAt, e.EndAt);
+    }
 }

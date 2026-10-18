@@ -9,3 +9,4 @@ publish
 !.idea/runConfigurations/
 csharp-course.sln.DotSettings.user
 /.envrc
+*.DotSettings.*

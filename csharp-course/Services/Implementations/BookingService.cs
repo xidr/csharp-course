@@ -1,13 +1,27 @@
 namespace csharp_course;
 
+/// <summary>
+///     Реализация сервиса бронирований
+/// </summary>
 public class BookingService : IBookingService
 {
-    IBookingRepository _bookingRepository;
-    IEventService _eventService;
-    ILogger<BookingService> _logger;
-    int _ms;
-    
-    public BookingService(IBookingRepository bookingRepository, IEventService eventService, ILogger<BookingService> logger, int ms = 1000)
+    private readonly IBookingRepository _bookingRepository;
+    private readonly IEventService _eventService;
+    private readonly ILogger<BookingService> _logger;
+    private readonly int _ms;
+
+    /// <summary>
+    ///     Создаёт сервис бронирований
+    /// </summary>
+    /// <param name="bookingRepository">Хранилище бронирований</param>
+    /// <param name="eventService">Сервис событий, нужен для проверки существования события</param>
+    /// <param name="logger">Логгер</param>
+    /// <param name="ms">Длительность искусственной задержки при обработке брони, мс</param>
+    public BookingService(
+        IBookingRepository bookingRepository,
+        IEventService eventService,
+        ILogger<BookingService> logger,
+        int ms = 1000)
     {
         _bookingRepository = bookingRepository;
         _eventService = eventService;
@@ -15,68 +29,66 @@ public class BookingService : IBookingService
         _ms = ms;
     }
 
+    /// <inheritdoc />
     public async Task<Booking> CreateBookingAsync(Guid eventId, CancellationToken ct)
     {
         if (!_eventService.HasEvent(eventId))
             throw new NotFoundException($"Событие {eventId} не найдено");
-        
-        var newBookingId = Guid.NewGuid();
-        
-        var newBooking = new Booking(newBookingId, eventId, Booking.BookingStatus.Pending, DateTime.UtcNow);
 
-        await _bookingRepository.TryAddAsync(newBooking, ct);
+        var newBooking = new Booking(Guid.NewGuid(), eventId, Booking.BookingStatus.Pending, DateTime.UtcNow);
+
+        if (!await _bookingRepository.TryAddAsync(newBooking, ct))
+            throw new InvalidOperationException($"Не удалось сохранить бронь {newBooking.Id}: такой идентификатор уже существует");
+
+        _logger.LogInformation("Бронь {BookingId} создана для события {EventId}", newBooking.Id, eventId);
 
         return newBooking;
     }
 
+    /// <inheritdoc />
     public async Task<Booking> GetBookingByIdAsync(Guid bookingId, CancellationToken ct)
     {
-        var booking = await _bookingRepository.GetAsync(bookingId, ct);
-        
-        if (booking is null)
-        {
-            throw new NotFoundException($"Бронь с id {bookingId} не найдена");
-        }
-        
-        return booking;
+        return await _bookingRepository.GetAsync(bookingId, ct)
+               ?? throw new NotFoundException($"Бронь {bookingId} не найдена");
     }
 
-    public Task<bool> TryUpdateBookingByIdAsync(Booking booking, CancellationToken ct)
-    {
-        throw new NotImplementedException();
-    }
-
+    /// <inheritdoc />
     public Task<IReadOnlyCollection<Booking>> GetPendingAsync(CancellationToken ct)
     {
-        throw new NotImplementedException();
+        return _bookingRepository.GetPendingAsync(ct);
     }
 
+    /// <inheritdoc />
     public async Task ProcessBookingAsync(Guid bookingId, CancellationToken ct)
     {
-        var pendingBooking = await GetBookingByIdAsync(bookingId, ct);
+        var booking = await GetBookingByIdAsync(bookingId, ct);
 
-        if (pendingBooking.Status != Booking.BookingStatus.Pending)
+        if (booking.Status != Booking.BookingStatus.Pending)
         {
-            throw new InvalidOperationException($"Бронь с id {bookingId} не находится в статусе Pending");
+            _logger.LogInformation(
+                "Бронь {BookingId} уже обработана (статус {Status}), пропускаем", booking.Id, booking.Status);
+            return;
         }
-        
-        _logger.LogInformation(
-            "Начат процесс генерации брони {Id}, время получения: {CreatedAt}, время начала обработки: {StartedAt}",
-            pendingBooking.Id, pendingBooking.CreatedAt, DateTime.Now);
-        
-        await Task.Delay(_ms, ct);
-        
-        var processedAt = DateTime.Now;
-        var processedBooking = pendingBooking with
+
+        // имитация обращения к внешней системе
+        await Task.Delay(TimeSpan.FromMilliseconds(_ms), ct);
+
+        var processed = booking with
         {
             Status = Booking.BookingStatus.Confirmed,
-            ProcessedAt = processedAt
+            ProcessedAt = DateTime.UtcNow
         };
-        
-        _logger.LogInformation(
-            "Обработка брони {Id} завершена, время завершения: {ProcessedAt}, статус: {Status}",
-            processedBooking.Id, processedBooking.ProcessedAt, processedBooking.Status);
 
-        await TryUpdateBookingByIdAsync(processedBooking, ct);
+        // сохраняем, только если бронь всё ещё ожидает обработки: защита от параллельного изменения
+        if (!await _bookingRepository.TryUpdateAsync(processed, Booking.BookingStatus.Pending, ct))
+        {
+            _logger.LogInformation(
+                "Бронь {BookingId} уже изменена другим процессом, результат обработки отброшен", booking.Id);
+            return;
+        }
+
+        _logger.LogInformation(
+            "Бронь {BookingId} обработана: статус {Status}, создана {CreatedAt}, обработана {ProcessedAt}",
+            processed.Id, processed.Status, processed.CreatedAt, processed.ProcessedAt);
     }
 }

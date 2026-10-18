@@ -5,7 +5,6 @@ using Microsoft.Extensions.Logging.Abstractions;
 
 namespace csharp_course.Tests;
 
-[Trait("Part", "Middleware")]
 [Trait("Middleware", "GlobalExceptionHandling")]
 public class GlobalExceptionHandlingMiddlewareTests
 {

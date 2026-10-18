@@ -56,6 +56,12 @@ public class EventService : IEventService
     }
 
     /// <inheritdoc />
+    public bool HasEvent(Guid eventId)
+    {
+        return _eventRepository.TryGet(eventId, out _);
+    }
+
+    /// <inheritdoc />
     public PaginatedResult<Event> GetAllEvents(string? title, DateTime? from, DateTime? to, int page, int pageSize)
     {
         ArgumentOutOfRangeException.ThrowIfLessThan(page, 1);

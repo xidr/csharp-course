@@ -5,7 +5,7 @@ namespace csharp_course;
 /// <summary>
 ///     Потокобезопасное хранилище событий в памяти на основе <see cref="ConcurrentDictionary{TKey,TValue}" />
 /// </summary>
-public class EventRepositoryDict : IEventRepository
+public class EventRepositoryInMemoryDict : IEventRepository
 {
     private readonly ConcurrentDictionary<Guid, Event> _events = new();
 
@@ -16,16 +16,17 @@ public class EventRepositoryDict : IEventRepository
         return _events.TryAdd(newEventId, newEvent);
     }
 
-    /// <inheritdoc />
-    public bool TryRemove(Guid eventId)
-    {
-        return _events.TryRemove(eventId, out _);
-    }
 
     /// <inheritdoc />
     public bool TryGet(Guid eventId, out Event? foundEvent)
     {
         return _events.TryGetValue(eventId, out foundEvent);
+    }
+
+    /// <inheritdoc />
+    public bool HasEvent(Guid eventId)
+    {
+        return _events.ContainsKey(eventId);
     }
 
     /// <inheritdoc />
@@ -36,6 +37,12 @@ public class EventRepositoryDict : IEventRepository
                 return true;
 
         return false;
+    }
+
+    /// <inheritdoc />
+    public bool TryRemove(Guid eventId)
+    {
+        return _events.TryRemove(eventId, out _);
     }
 
     /// <inheritdoc />

@@ -29,6 +29,13 @@ public interface IEventRepository
     bool TryGet(Guid eventId, out Event? @event);
 
     /// <summary>
+    ///     Проверяет, существует ли событие с указанным идентификатором
+    /// </summary>
+    /// <param name="eventId">Идентификатор события</param>
+    /// <returns><c>true</c>, если событие существует; иначе <c>false</c></returns>
+    bool HasEvent(Guid eventId);
+
+    /// <summary>
     ///     Заменяет существующее событие новым
     /// </summary>
     /// <param name="eventId">Идентификатор заменяемого события</param>

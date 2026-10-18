@@ -6,7 +6,7 @@ namespace csharp_course;
 ///     Контроллер для управления событиями
 /// </summary>
 [ApiController]
-[Route("[controller]")]
+[Route("events")]
 public class EventsController : ControllerBase
 {
     private readonly IEventService _eventService;

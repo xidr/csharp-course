@@ -1,7 +1,9 @@
 # Events API Service
 
-Веб-сервис на ASP.NET Core (.NET 10) для управления событиями (мероприятиями).
-События хранятся в памяти приложения и теряются при его перезапуске.
+Веб-сервис на ASP.NET Core (.NET 10) для управления событиями (мероприятиями) и их бронированием.
+Бронирование работает по схеме "быстрый ответ + отложенная обработка": API сразу отвечает `202 Accepted`,
+а бронь обрабатывает фоновый сервис.
+События и бронирования хранятся в памяти приложения и теряются при его перезапуске.
 
 Деплой для теста доступен по ссылке: https://api.csharp-course.xidriel.me/swagger/index.html
 
@@ -40,7 +42,9 @@ dotnet run --project csharp-course
 
 ### Тесты
 
-Юнит-тесты сервиса событий (`EventService`) лежат в проекте `csharp-course.Tests` (xUnit).
+Юнит-тесты лежат в проекте `csharp-course.Tests` (xUnit). Они покрывают сервис событий (`EventService`),
+сервис бронирований (`BookingService`), хранилище бронирований (`BookingRepositoryInMemoryDict`)
+и обработчик ошибок (`GlobalExceptionHandlingMiddleware`).
 Запуск всех тестов из корневого каталога репозитория:
 
 ```bash
@@ -52,12 +56,14 @@ dotnet test
 | Трейт | Значения |
 |---|---|
 | `Category` | `Success`, `Failure` |
-| `Feature` | `Create`, `Read`, `Update`, `Delete`, `Filtering`, `Pagination`, `Combined`, `Concurrency` |
-| `Service` | `EventService` |
+| `Feature` | `Create`, `Read`, `Get`, `Add`, `Update`, `Delete`, `Process`, `Pending`, `Filtering`, `Pagination`, `Combined`, `Cancellation`, `Concurrency` |
+| `Service` | `EventService`, `BookingService` |
+| `Repository` | `BookingRepositoryInMemoryDict` |
 
 ```bash
 dotnet test --filter "Category=Failure"
 dotnet test --filter "Feature=Pagination"
+dotnet test --filter "Service=BookingService"
 ```
 
 ### Deployment
@@ -74,13 +80,16 @@ dotnet test --filter "Feature=Pagination"
 
 ```
 csharp-course/             # веб-приложение
-├── Controllers/           # EventsController — HTTP-эндпоинты
+├── Controllers/           # EventsController, BookingsController — HTTP-эндпоинты
 ├── Contracts/
 │   ├── Requests/          # EventRequest, EventsFilterRequest
-│   └── Responses/         # EventResponse, PaginatedResult<T>
-├── Domain/                # Event
-├── Services/              # IEventService, EventService — бизнес-логика
-├── Repositories/	   # EventRepository, EventRepositoryDict
+│   └── Responses/         # EventResponse, BookingInfo, PaginatedResult<T>
+├── Domain/                # Event, Booking (и enum BookingStatus)
+├── Services/
+│   ├── Interfaces/        # IEventService, IBookingService
+│   ├── Implementations/   # EventService, BookingService — бизнес-логика
+│   └── Background/        # BookingBackgroundService — фоновая обработка броней
+├── Repositories/          # IEventRepository, IBookingRepository и их реализации в памяти
 ├── Middleware/            # GlobalExceptionHandlingMiddleware
 └── Utils/                 # ApiResult, NotFoundException
 csharp-course.Tests/       # юнит-тесты (xUnit)
@@ -89,16 +98,21 @@ csharp-course.Tests/       # юнит-тесты (xUnit)
 Зависимости подключаются через DI (см. `Program.cs`):
 
 - `IEventService` → `EventService`
-- `IEventRepository` → `EventRepositoryDict` (хранилище в памяти на `ConcurrentDictionary`)
+- `IEventRepository` → `EventRepositoryInMemoryDict`
+- `IBookingService` → `BookingService`
+- `IBookingRepository` → `BookingRepositoryInMemoryDict`
+- `BookingBackgroundService` — фоновый сервис (`AddHostedService`)
 
-Оба сервиса зарегистрированы как singleton, поскольку хранилище держит данные в памяти приложения.
-Чтобы сменить способ хранения, достаточно реализовать `IEventRepository` и поменять регистрацию.
+Сервисы и хранилища зарегистрированы как singleton, поскольку хранилища держат данные в памяти приложения
+(`ConcurrentDictionary`). Чтобы сменить способ хранения, достаточно реализовать интерфейс хранилища
+и поменять регистрацию.
 
 ---
 
 ## 📖 Документация API
 
-Базовый путь к контроллеру событий: `/events`
+Пути контроллеров: `/events` (события) и `/bookings` (бронирования).
+Создание брони вызывается по пути события: `POST /events/{id}/book`.
 
 ### Модели данных
 
@@ -131,6 +145,31 @@ csharp-course.Tests/       # юнит-тесты (xUnit)
 события, заканчивающиеся днём или вечером 5 ноября, в выборку не попадут.
 Чтобы включить события, заканчивающиеся в течение всего 5 ноября, укажите
 `to=2026-11-05T23:59:59.9999999`. Граница `to` включительна.
+
+#### `Booking` (бронь) и `BookingStatus`
+Бронь связана с событием по `eventId` и хранится в памяти приложения.
+
+- `id` (GUID): уникальный идентификатор брони.
+- `eventId` (GUID): идентификатор события, к которому относится бронь.
+- `status` (`BookingStatus`): текущий статус брони.
+- `createdAt` (дата/время, UTC): момент создания брони.
+- `processedAt` (дата/время, UTC, может быть `null`): момент обработки брони; пока бронь не обработана, пусто.
+
+Статусы (`BookingStatus`):
+
+| Статус | Значение |
+|---|---|
+| `Pending` | бронь создана и ожидает обработки (начальный статус) |
+| `Confirmed` | бронь подтверждена |
+| `Rejected` | бронь отклонена |
+
+Сейчас фоновый сервис всегда переводит бронь в `Confirmed`. Статус `Rejected` предусмотрен моделью
+для будущей логики выбора статуса.
+
+#### `BookingInfo` (данные брони в ответе)
+- `id` (GUID): идентификатор брони.
+- `eventId` (GUID): идентификатор события.
+- `status` (строка): `Pending`, `Confirmed` или `Rejected`.
 
 #### `PaginatedResult<T>` (результат постраничной выборки)
 - `items` (массив): элементы запрошенной страницы.
@@ -260,3 +299,88 @@ HTTP-код передаётся только в статусе ответа, в
 - **Ответ**:
   - `200 OK`: событие успешно удалено (`ApiResult`).
   - `404 Not Found`: событие не найдено (`ProblemDetails`).
+
+#### 6. Забронировать событие
+- **Метод**: `POST`
+- **Путь**: `/events/{id}/book`
+- **Параметры**: `id` (GUID) — идентификатор события.
+- **Тело запроса**: не требуется.
+- **Ответ**:
+  - `202 Accepted`: бронь принята и ожидает обработки (`ApiResult<BookingInfo>`, `status` = `Pending`).
+    В заголовке `Location` возвращается ссылка на ресурс брони, например `http://localhost:5132/bookings/{bookingId}`.
+  - `404 Not Found`: событие не найдено или удалено (`ProblemDetails`).
+
+Эндпоинт не ждёт окончания обработки: он создаёт бронь в статусе `Pending` и сразу возвращает ответ.
+
+Пример ответа:
+
+```json
+{
+  "data": {
+    "id": "7c9e6679-7425-40de-944b-e07fc1f90ae7",
+    "eventId": "3fa85f64-5717-4562-b3fc-2c963f66afa6",
+    "status": "Pending"
+  },
+  "dateTime": "2026-10-18T20:01:47.7359450Z"
+}
+```
+
+#### 7. Получить бронь по ID
+- **Метод**: `GET`
+- **Путь**: `/bookings/{id}`
+- **Параметры**: `id` (GUID) — идентификатор брони.
+- **Ответ**:
+  - `200 OK`: текущее состояние брони (`ApiResult<BookingInfo>`).
+  - `404 Not Found`: бронь не найдена (`ProblemDetails`).
+
+---
+
+## ⚙️ Фоновая обработка бронирований
+
+Обработкой броней занимается `BookingBackgroundService` (наследник `BackgroundService`), он запускается вместе с приложением.
+
+1. Раз в 2 секунды сервис запрашивает у `BookingService` брони в статусе `Pending`, от самых старых к самым новым.
+2. Для каждой брони вызывается `ProcessBookingAsync`. Он выдерживает искусственную задержку в 1 секунду,
+   имитирующую обращение к внешней системе.
+3. После задержки бронь переводится в статус `Confirmed`, заполняется `processedAt` (UTC), и бронь сохраняется.
+   Сохранение выполняется, только если бронь всё ещё в статусе `Pending`, поэтому уже обработанная бронь
+   повторно не обрабатывается и ничего не перезаписывается.
+4. Ошибка при обработке одной брони логируется и не останавливает обработку остальных.
+5. При остановке приложения сервис завершается корректно через `CancellationToken`.
+
+Из-за паузы между проверками и задержки обработки бронь становится `Confirmed` примерно через 1–3 секунды после создания.
+
+## 🧪 Пример сценария использования
+
+1. Создайте событие:
+
+   ```bash
+   curl -X POST http://localhost:5132/events \
+     -H "Content-Type: application/json" \
+     -d '{"title":"Концерт джаза","startAt":"2026-03-01T18:00:00","endAt":"2026-03-01T21:00:00"}'
+   ```
+
+   В ответе в поле `data.id` придёт идентификатор события.
+
+2. Забронируйте событие. Ответ приходит сразу: `202 Accepted`, `status` = `Pending`, заголовок `Location` со ссылкой на бронь:
+
+   ```bash
+   curl -i -X POST http://localhost:5132/events/{eventId}/book
+   ```
+
+3. Сразу запросите бронь по ссылке из `Location`. Статус всё ещё `Pending`:
+
+   ```bash
+   curl http://localhost:5132/bookings/{bookingId}
+   ```
+
+4. Подождите несколько секунд и повторите запрос. Статус изменился на `Confirmed`:
+
+   ```json
+   { "data": { "id": "...", "eventId": "...", "status": "Confirmed" }, "dateTime": "..." }
+   ```
+
+5. Если событие не существует или уже удалено, `POST /events/{id}/book` вернёт `404 Not Found`,
+   так же как `GET /bookings/{id}` для неизвестной брони.
+
+Тот же сценарий можно выполнить в Swagger UI (`/swagger`).

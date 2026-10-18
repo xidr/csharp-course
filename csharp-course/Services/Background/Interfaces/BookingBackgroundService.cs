@@ -2,18 +2,15 @@ namespace csharp_course;
 
 public class BookingBackgroundService : BackgroundService
 {
-    private readonly IBookingTaskQueue _taskQueue;
     private readonly ILogger<BookingBackgroundService> _logger;
     private readonly IBookingService _bookingService;
     private readonly int _ms;
 
     public BookingBackgroundService(
-        IBookingTaskQueue taskQueue,
         ILogger<BookingBackgroundService> logger,
         IBookingService bookingService,
         int ms = 2000)
     {
-        _taskQueue = taskQueue;
         _logger = logger;
         _bookingService = bookingService;
         _ms = ms;
@@ -25,43 +22,47 @@ public class BookingBackgroundService : BackgroundService
 
         while (!stoppingToken.IsCancellationRequested)
         {
+            _logger.LogInformation("BookingBackgroundService запущен");
+
             try
             {
-                var pendingBookings = await _bookingService.GetPendingAsync(stoppingToken);
-                foreach (var pendingBooking in pendingBookings)
+                while (!stoppingToken.IsCancellationRequested)
                 {
-                    _logger.LogInformation(
-                        "Начат процесс генерации брони {Id}, время получения: {CreatedAt}, время начала обработки: {StartedAt}",
-                        pendingBooking.Id, pendingBooking.CreatedAt, DateTime.Now);
-                    
-                    await Task.Delay(TimeSpan.FromMilliseconds(_ms), stoppingToken);
-                    
-                    var processedAt = DateTime.Now;
-                    var processedBooking = pendingBooking with
-                    {
-                        Status = Booking.BookingStatus.Confirmed,
-                        ProcessedAt = processedAt
-                    };
-
-                    await _bookingService.TryUpdateBookingByIdAsync(processedBooking, stoppingToken);
-                    
-                    _logger.LogInformation(
-                        "Обработка брони {Id} завершена, время завершения: {ProcessedAt}, статус: {Status}",
-                        pendingBooking.Id, pendingBooking.ProcessedAt, processedBooking.Status);
+                    await ProcessPendingAsync(stoppingToken);
                 }
             }
             catch (OperationCanceledException) when (stoppingToken.IsCancellationRequested)
             {
-                break;
+                // штатная остановка приложения
             }
-            // catch (Exception ex)
-            // {
-            //     _logger.LogError(ex, "Ошибка при генерации отчёта");
-            // }
 
-            await Task.Delay(TimeSpan.FromSeconds(2), stoppingToken);
+            _logger.LogInformation("BookingBackgroundService остановлен");
+        }
+    }
+    
+    private async Task ProcessPendingAsync(CancellationToken ct)
+    {
+        IReadOnlyCollection<Booking> pending;
+        try
+        {
+            pending = await _bookingService.GetPendingAsync(ct);
+        }
+        catch (Exception ex) when (ex is not OperationCanceledException)
+        {
+            _logger.LogError(ex, "Не удалось получить брони в ожидании");
+            return;
         }
 
-        _logger.LogInformation("BookingBackgroundService остановлен");
+        foreach (var booking in pending)
+        {
+            try
+            {
+                await _bookingService.ProcessBookingAsync(booking.Id, ct);
+            }
+            catch (Exception ex) when (ex is not OperationCanceledException)
+            {
+                _logger.LogError(ex, "Ошибка при обработке брони {Id}", booking.Id);
+            }
+        }
     }
 }

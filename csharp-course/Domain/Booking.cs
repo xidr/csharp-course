@@ -30,7 +30,7 @@ public record Booking
     /// </summary>
     /// <param name="id">Уникальный идентификатор брони</param>
     /// <param name="eventId">Идентификатор события, для которого делается бронь</param>
-    public Booking(Guid id, Guid eventId, BookingStatus status, DateTime createdAt, DateTime? processedAt)
+    public Booking(Guid id, Guid eventId, BookingStatus status, DateTime createdAt, DateTime? processedAt = null)
     {
         Id = id;
         EventId = eventId;

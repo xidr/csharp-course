@@ -22,6 +22,11 @@ public class EventRepositoryInMemoryDict : IEventRepository
     {
         return _events.TryGetValue(eventId, out foundEvent);
     }
+    
+    public bool HasEvent(Guid eventId)
+    {
+        return _events.ContainsKey(eventId);
+    }
 
     /// <inheritdoc />
     public bool TryUpdate(Guid eventId, Event newEvent)

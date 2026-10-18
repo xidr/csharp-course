@@ -60,6 +60,8 @@ public interface IEventService
     ///     Хранилище вернуло null вместо найденного события
     /// </exception>
     Event GetEvent(Guid eventId);
+    
+    bool HasEvent(Guid eventId);
 
     /// <summary>
     ///     Возвращает страницу событий, удовлетворяющих переданным фильтрам.

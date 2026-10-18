@@ -8,7 +8,7 @@ public class EventServiceTests
 {
     private static readonly DateTime Jan1 = new(2026, 1, 1, 10, 0, 0);
 
-    private readonly EventService _service = new(new EventRepositoryDict());
+    private readonly EventService _service = new(new EventRepositoryInMemoryDict());
 
     private static DateTime Day(int month, int day, int hour = 10)
     {

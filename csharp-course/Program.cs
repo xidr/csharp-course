@@ -51,7 +51,7 @@ builder.Services.AddControllers()
     });
 
 builder.Services.AddHttpLogging(o => { });
-builder.Services.AddSingleton<IEventRepository, EventRepositoryDict>();
+builder.Services.AddSingleton<IEventRepository, EventRepositoryInMemoryDict>();
 builder.Services.AddSingleton<IEventService, EventService>();
 
 builder.Services.AddSwaggerGen(options =>

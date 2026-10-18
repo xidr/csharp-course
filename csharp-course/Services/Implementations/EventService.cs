@@ -54,7 +54,8 @@ public class EventService : IEventService
 
         throw new NotFoundException($"Событие {eventId} не найдено");
     }
-    
+
+    /// <inheritdoc />
     public bool HasEvent(Guid eventId)
     {
         return _eventRepository.TryGet(eventId, out _);

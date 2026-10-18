@@ -1,12 +1,12 @@
 namespace csharp_course;
 
 /// <summary>
-///     Фоновый сервис, периодически обрабатывающий брони в статусе <see cref="Booking.BookingStatus.Pending"/>
+///     Фоновый сервис, периодически обрабатывающий брони в статусе <see cref="Booking.BookingStatus.Pending" />
 /// </summary>
 public class BookingBackgroundService : BackgroundService
 {
-    private readonly ILogger<BookingBackgroundService> _logger;
     private readonly IBookingService _bookingService;
+    private readonly ILogger<BookingBackgroundService> _logger;
     private readonly TimeSpan _pollInterval;
 
     /// <summary>
@@ -63,7 +63,6 @@ public class BookingBackgroundService : BackgroundService
         }
 
         foreach (var booking in pending)
-        {
             try
             {
                 await _bookingService.ProcessBookingAsync(booking.Id, ct);
@@ -72,6 +71,5 @@ public class BookingBackgroundService : BackgroundService
             {
                 _logger.LogError(ex, "Ошибка при обработке брони {BookingId}", booking.Id);
             }
-        }
     }
 }

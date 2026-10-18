@@ -1,9 +1,9 @@
 using System.Net;
 using System.Reflection;
+using System.Text.Json.Serialization;
 using csharp_course;
 using Microsoft.AspNetCore.HttpOverrides;
 using Microsoft.AspNetCore.Mvc;
-using System.Text.Json.Serialization;
 
 var builder = WebApplication.CreateBuilder(args);
 

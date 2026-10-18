@@ -23,7 +23,7 @@ public interface IBookingRepository
 
     /// <summary>
     ///     Заменяет сохранённую бронь переданной, только если сохранённая бронь
-    ///     сейчас находится в ожидаемом статусе. Бронь определяется по <see cref="Booking.Id"/>
+    ///     сейчас находится в ожидаемом статусе. Бронь определяется по <see cref="Booking.Id" />
     /// </summary>
     /// <param name="booking">Новое значение брони</param>
     /// <param name="expectedStatus">Статус, в котором бронь должна находиться на момент замены</param>
@@ -35,7 +35,7 @@ public interface IBookingRepository
     Task<bool> TryUpdateAsync(Booking booking, Booking.BookingStatus expectedStatus, CancellationToken ct = default);
 
     /// <summary>
-    ///     Возвращает брони в статусе <see cref="Booking.BookingStatus.Pending"/>,
+    ///     Возвращает брони в статусе <see cref="Booking.BookingStatus.Pending" />,
     ///     от самых старых к самым новым
     /// </summary>
     /// <param name="ct">Токен отмены</param>

@@ -22,7 +22,8 @@ public class EventRepositoryInMemoryDict : IEventRepository
     {
         return _events.TryGetValue(eventId, out foundEvent);
     }
-    
+
+    /// <inheritdoc />
     public bool HasEvent(Guid eventId)
     {
         return _events.ContainsKey(eventId);
@@ -37,7 +38,7 @@ public class EventRepositoryInMemoryDict : IEventRepository
 
         return false;
     }
-    
+
     /// <inheritdoc />
     public bool TryRemove(Guid eventId)
     {

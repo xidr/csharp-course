@@ -6,7 +6,7 @@ namespace csharp_course;
 public interface IBookingService
 {
     /// <summary>
-    ///     Создаёт бронь для события. Бронь создаётся в статусе <see cref="Booking.BookingStatus.Pending"/>
+    ///     Создаёт бронь для события. Бронь создаётся в статусе <see cref="Booking.BookingStatus.Pending" />
     ///     и обрабатывается позже в фоне
     /// </summary>
     /// <param name="eventId">Идентификатор события</param>
@@ -28,12 +28,12 @@ public interface IBookingService
     ///     Возвращает брони, ожидающие обработки, от самых старых к самым новым
     /// </summary>
     /// <param name="ct">Токен отмены</param>
-    /// <returns>Брони в статусе <see cref="Booking.BookingStatus.Pending"/></returns>
+    /// <returns>Брони в статусе <see cref="Booking.BookingStatus.Pending" /></returns>
     Task<IReadOnlyCollection<Booking>> GetPendingAsync(CancellationToken ct);
 
     /// <summary>
     ///     Обрабатывает бронь: имитирует обращение к внешней системе, затем переводит бронь
-    ///     в статус <see cref="Booking.BookingStatus.Confirmed"/> и заполняет дату обработки.
+    ///     в статус <see cref="Booking.BookingStatus.Confirmed" /> и заполняет дату обработки.
     ///     Если бронь уже обработана, ничего не делает
     /// </summary>
     /// <param name="bookingId">Идентификатор брони</param>

@@ -3,7 +3,7 @@ using System.Collections.Concurrent;
 namespace csharp_course;
 
 /// <summary>
-///     Потокобезопасное хранилище бронирований в памяти на основе <see cref="ConcurrentDictionary{TKey,TValue}"/>
+///     Потокобезопасное хранилище бронирований в памяти на основе <see cref="ConcurrentDictionary{TKey,TValue}" />
 /// </summary>
 public class BookingRepositoryInMemoryDict : IBookingRepository
 {

@@ -38,7 +38,8 @@ public class BookingService : IBookingService
         var newBooking = new Booking(Guid.NewGuid(), eventId, Booking.BookingStatus.Pending, DateTime.UtcNow);
 
         if (!await _bookingRepository.TryAddAsync(newBooking, ct))
-            throw new InvalidOperationException($"Не удалось сохранить бронь {newBooking.Id}: такой идентификатор уже существует");
+            throw new InvalidOperationException(
+                $"Не удалось сохранить бронь {newBooking.Id}: такой идентификатор уже существует");
 
         _logger.LogInformation("Бронь {BookingId} создана для события {EventId}", newBooking.Id, eventId);
 

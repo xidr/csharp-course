@@ -170,6 +170,8 @@ csharp-course.Tests/       # юнит-тесты (xUnit)
 - `id` (GUID): идентификатор брони.
 - `eventId` (GUID): идентификатор события.
 - `status` (строка): `Pending`, `Confirmed` или `Rejected`.
+- `createdAt` (дата/время, UTC): момент создания брони.
+- `processedAt` (дата/время, UTC, может быть `null`): момент обработки брони; `null`, пока бронь не обработана.
 
 #### `PaginatedResult<T>` (результат постраничной выборки)
 - `items` (массив): элементы запрошенной страницы.
@@ -319,7 +321,9 @@ HTTP-код передаётся только в статусе ответа, в
   "data": {
     "id": "7c9e6679-7425-40de-944b-e07fc1f90ae7",
     "eventId": "3fa85f64-5717-4562-b3fc-2c963f66afa6",
-    "status": "Pending"
+    "status": "Pending",
+    "createdAt": "2026-10-18T20:01:47.7359450Z",
+    "processedAt": null
   },
   "dateTime": "2026-10-18T20:01:47.7359450Z"
 }
@@ -377,7 +381,16 @@ HTTP-код передаётся только в статусе ответа, в
 4. Подождите несколько секунд и повторите запрос. Статус изменился на `Confirmed`:
 
    ```json
-   { "data": { "id": "...", "eventId": "...", "status": "Confirmed" }, "dateTime": "..." }
+   {
+     "data": {
+       "id": "7c9e6679-7425-40de-944b-e07fc1f90ae7",
+       "eventId": "3fa85f64-5717-4562-b3fc-2c963f66afa6",
+       "status": "Confirmed",
+       "createdAt": "2026-10-18T20:01:47.7359450Z",
+       "processedAt": "2026-10-18T20:01:49.7359450Z"
+     },
+     "dateTime": "2026-10-18T20:01:50Z"
+   }
    ```
 
 5. Если событие не существует или уже удалено, `POST /events/{id}/book` вернёт `404 Not Found`,

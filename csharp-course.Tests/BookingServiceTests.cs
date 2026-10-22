@@ -21,7 +21,7 @@ public class BookingServiceTests
         new(_bookingRepository, _eventService, NullLogger<BookingService>.Instance, delayMs);
 
     private Event CreateEvent() =>
-        _eventService.CreateEvent("Событие", null, DateTime.UtcNow.AddDays(1), DateTime.UtcNow.AddDays(2));
+        _eventService.CreateEvent("Событие", null, DateTime.UtcNow.AddDays(1), DateTime.UtcNow.AddDays(2), 100);
 
     // ---------- Создание брони: успешные сценарии ----------
 

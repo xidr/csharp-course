@@ -17,10 +17,11 @@ public class EventService : IEventService
     }
 
     /// <inheritdoc />
-    public Event CreateEvent(string title, string? description, DateTime startDate, DateTime endDate)
+    public Event CreateEvent(
+        string title, string? description, DateTime startDate, DateTime endDate, int totalSeats)
     {
         var newEventId = Guid.NewGuid();
-        var newEvent = new Event(newEventId, title, startDate, endDate, description);
+        var newEvent = Event.Create(newEventId, title, startDate, endDate, description, totalSeats);
         if (_eventRepository.TryAdd(newEventId, newEvent)) return newEvent;
 
         throw new InvalidOperationException($"Не удалось создать событие: {newEventId} уже существует");
@@ -33,9 +34,11 @@ public class EventService : IEventService
     }
 
     /// <inheritdoc />
-    public void UpdateEvent(Guid eventId, string title, string? description, DateTime startDate, DateTime endDate)
+    public void UpdateEvent(
+        Guid eventId, string title, string? description, DateTime startDate, DateTime endDate, int totalSeats)
     {
-        var updatedEvent = new Event(eventId, title, startDate, endDate, description);
+        var updatedEvent = GetEvent(eventId);
+        updatedEvent.UpdateDetails(title, startDate, endDate, description, totalSeats);
 
         if (_eventRepository.TryUpdate(eventId, updatedEvent)) return;
 

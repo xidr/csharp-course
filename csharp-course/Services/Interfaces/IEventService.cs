@@ -14,6 +14,7 @@ public interface IEventService
     /// <param name="description">Описание события</param>
     /// <param name="startDate">Дата и время начала</param>
     /// <param name="endDate">Дата и время окончания</param>
+    /// <param name="totalSeats">Общее количество мест</param>
     /// <returns>Созданное событие</returns>
     /// <exception cref="ValidationException">
     ///     <paramref name="endDate" /> не позже <paramref name="startDate" />
@@ -21,7 +22,7 @@ public interface IEventService
     /// <exception cref="InvalidOperationException">
     ///     Не удалось добавить событие в хранилище: сгенерированный идентификатор уже существует
     /// </exception>
-    Event CreateEvent(string title, string? description, DateTime startDate, DateTime endDate);
+    Event CreateEvent(string title, string? description, DateTime startDate, DateTime endDate, int totalSeats);
 
     /// <summary>
     ///     Удаляет событие
@@ -40,13 +41,15 @@ public interface IEventService
     /// <param name="description">Новое описание события</param>
     /// <param name="startDate">Новая дата и время начала</param>
     /// <param name="endDate">Новая дата и время окончания</param>
+    /// <param name="totalSeats">Новое общее количество мест</param>
     /// <exception cref="ValidationException">
     ///     <paramref name="endDate" /> не позже <paramref name="startDate" />
     /// </exception>
     /// <exception cref="NotFoundException">
     ///     Событие с указанным идентификатором не найдено
     /// </exception>
-    void UpdateEvent(Guid eventId, string title, string? description, DateTime startDate, DateTime endDate);
+    void UpdateEvent(
+        Guid eventId, string title, string? description, DateTime startDate, DateTime endDate, int totalSeats);
 
     /// <summary>
     ///     Возвращает событие по идентификатору

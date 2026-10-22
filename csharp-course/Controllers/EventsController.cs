@@ -98,7 +98,7 @@ public class EventsController : ControllerBase
     public ActionResult<ApiResult<EventResponse>> Post([FromBody] EventRequest request)
     {
         var newEvent = _eventService.CreateEvent(request.Title, request.Description, request.StartAt!.Value,
-            request.EndAt!.Value);
+            request.EndAt!.Value, request.TotalSeats!.Value);
 
         return CreatedAtAction(nameof(GetEventById), new { id = newEvent.Id }, new ApiResult<EventResponse>
         {
@@ -131,7 +131,7 @@ public class EventsController : ControllerBase
     public ActionResult Put(Guid id, [FromBody] EventRequest request)
     {
         _eventService.UpdateEvent(id, request.Title, request.Description, request.StartAt!.Value,
-            request.EndAt!.Value);
+            request.EndAt!.Value, request.TotalSeats!.Value);
 
         return NoContent();
     }

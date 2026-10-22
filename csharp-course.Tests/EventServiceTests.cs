@@ -18,7 +18,7 @@ public class EventServiceTests
     /// <summary>Создаёт событие длительностью 2 часа, начинающееся в указанное время</summary>
     private Event Add(string title, DateTime startAt, string? description = null)
     {
-        return _service.CreateEvent(title, description, startAt, startAt.AddHours(2));
+        return _service.CreateEvent(title, description, startAt, startAt.AddHours(2), 100);
     }
 
     private PaginatedResult<Event> Query(
@@ -39,13 +39,15 @@ public class EventServiceTests
     [Trait("Feature", "Create")]
     public void CreateEvent_ValidData_ReturnsEventAndStoresIt()
     {
-        var created = _service.CreateEvent("Концерт", "Описание", Jan1, Jan1.AddHours(3));
+        var created = _service.CreateEvent("Концерт", "Описание", Jan1, Jan1.AddHours(3), 50);
 
         Assert.NotEqual(Guid.Empty, created.Id);
         Assert.Equal("Концерт", created.Title);
         Assert.Equal("Описание", created.Description);
         Assert.Equal(Jan1, created.StartAt);
         Assert.Equal(Jan1.AddHours(3), created.EndAt);
+        Assert.Equal(50, created.TotalSeats);
+        Assert.Equal(50, created.AvailableSeats);
         Assert.Same(created, _service.GetEvent(created.Id));
     }
 
@@ -54,7 +56,7 @@ public class EventServiceTests
     [Trait("Feature", "Create")]
     public void CreateEvent_NullDescription_StoresEmptyString()
     {
-        var created = _service.CreateEvent("Концерт", null, Jan1, Jan1.AddHours(1));
+        var created = _service.CreateEvent("Концерт", null, Jan1, Jan1.AddHours(1), 100);
 
         Assert.Equal(string.Empty, created.Description);
     }
@@ -132,7 +134,7 @@ public class EventServiceTests
         var newStart = Day(5, 1);
         var newEnd = Day(5, 2);
 
-        _service.UpdateEvent(created.Id, "Новое название", "Новое описание", newStart, newEnd);
+        _service.UpdateEvent(created.Id, "Новое название", "Новое описание", newStart, newEnd, 150);
 
         var updated = _service.GetEvent(created.Id);
         Assert.Equal(created.Id, updated.Id);
@@ -140,6 +142,8 @@ public class EventServiceTests
         Assert.Equal("Новое описание", updated.Description);
         Assert.Equal(newStart, updated.StartAt);
         Assert.Equal(newEnd, updated.EndAt);
+        Assert.Equal(150, updated.TotalSeats);
+        Assert.Equal(150, updated.AvailableSeats);
     }
 
     [Fact]
@@ -149,9 +153,41 @@ public class EventServiceTests
     {
         var created = Add("Событие", Jan1);
 
-        _service.UpdateEvent(created.Id, "Другое", null, Jan1, Jan1.AddHours(1));
+        _service.UpdateEvent(created.Id, "Другое", null, Jan1, Jan1.AddHours(1), 100);
 
         Assert.Equal(1, Query().TotalCount);
+    }
+
+    [Fact]
+    [Trait("Category", "Success")]
+    [Trait("Feature", "Update")]
+    public void UpdateEvent_ExistingId_UpdatesCapacityAndPreservesReservedSeats()
+    {
+        var created = Add("Событие", Jan1);
+        created.TryReserveSeats(7);
+
+        _service.UpdateEvent(created.Id, "Другое", null, Jan1, Jan1.AddHours(1), 120);
+
+        var updated = _service.GetEvent(created.Id);
+        Assert.Equal(120, updated.TotalSeats);
+        Assert.Equal(113, updated.AvailableSeats);
+    }
+
+    [Fact]
+    [Trait("Category", "Failure")]
+    [Trait("Feature", "Update")]
+    public void UpdateEvent_TotalSeatsBelowReservedSeats_ThrowsAndLeavesEventUnchanged()
+    {
+        var created = Add("Событие", Jan1);
+        created.TryReserveSeats(7);
+
+        Assert.Throws<ValidationException>(() =>
+            _service.UpdateEvent(created.Id, "Другое", null, Jan1, Jan1.AddHours(1), 6));
+
+        var unchanged = _service.GetEvent(created.Id);
+        Assert.Equal("Событие", unchanged.Title);
+        Assert.Equal(100, unchanged.TotalSeats);
+        Assert.Equal(93, unchanged.AvailableSeats);
     }
 
     [Fact]
@@ -236,7 +272,7 @@ public class EventServiceTests
     public void GetAllEvents_FilterByTo_ReturnsEventsEndingNotLater()
     {
         Add("Раньше", Day(1, 1)); // заканчивается 1 янв 12:00
-        _service.CreateEvent("Ровно в границу", null, Day(2, 1), Day(2, 1, 20)); // заканчивается в 20:00
+        _service.CreateEvent("Ровно в границу", null, Day(2, 1), Day(2, 1, 20), 100); // заканчивается в 20:00
         Add("Позже", Day(3, 1));
 
         var result = Query(to: Day(2, 1, 20));
@@ -264,7 +300,7 @@ public class EventServiceTests
     [Trait("Feature", "Filtering")]
     public void GetAllEvents_EventStartingInsideButEndingAfterTo_IsExcluded()
     {
-        _service.CreateEvent("Выходит за границу", null, Day(2, 1), Day(3, 5));
+        _service.CreateEvent("Выходит за границу", null, Day(2, 1), Day(3, 5), 100);
 
         var result = Query(from: Day(1, 1), to: Day(2, 28));
 
@@ -396,7 +432,7 @@ public class EventServiceTests
     public void UpdateEvent_NonExistingId_ThrowsNotFoundException()
     {
         Assert.Throws<NotFoundException>(() =>
-            _service.UpdateEvent(Guid.NewGuid(), "Название", null, Jan1, Jan1.AddHours(1)));
+            _service.UpdateEvent(Guid.NewGuid(), "Название", null, Jan1, Jan1.AddHours(1), 100));
     }
 
     [Fact]
@@ -405,7 +441,7 @@ public class EventServiceTests
     public void UpdateEvent_NonExistingId_DoesNotCreateEvent()
     {
         Assert.Throws<NotFoundException>(() =>
-            _service.UpdateEvent(Guid.NewGuid(), "Название", null, Jan1, Jan1.AddHours(1)));
+            _service.UpdateEvent(Guid.NewGuid(), "Название", null, Jan1, Jan1.AddHours(1), 100));
 
         Assert.Equal(0, Query().TotalCount);
     }
@@ -424,7 +460,7 @@ public class EventServiceTests
     public void CreateEvent_EndBeforeStart_ThrowsValidationException()
     {
         Assert.Throws<ValidationException>(() =>
-            _service.CreateEvent("Событие", null, Jan1, Jan1.AddHours(-1)));
+            _service.CreateEvent("Событие", null, Jan1, Jan1.AddHours(-1), 100));
 
         Assert.Equal(0, Query().TotalCount);
     }
@@ -435,7 +471,7 @@ public class EventServiceTests
     public void CreateEvent_EndEqualsStart_ThrowsValidationException()
     {
         Assert.Throws<ValidationException>(() =>
-            _service.CreateEvent("Событие", null, Jan1, Jan1));
+            _service.CreateEvent("Событие", null, Jan1, Jan1, 100));
     }
 
     [Fact]
@@ -446,7 +482,7 @@ public class EventServiceTests
         var created = Add("Событие", Jan1);
 
         Assert.Throws<ValidationException>(() =>
-            _service.UpdateEvent(created.Id, "Новое", null, Jan1, Jan1.AddDays(-1)));
+            _service.UpdateEvent(created.Id, "Новое", null, Jan1, Jan1.AddDays(-1), 100));
     }
 
     [Fact]
@@ -457,7 +493,7 @@ public class EventServiceTests
         var created = Add("Исходное название", Jan1, "Исходное описание");
 
         Assert.Throws<ValidationException>(() =>
-            _service.UpdateEvent(created.Id, "Новое", "Новое", Jan1, Jan1.AddDays(-1)));
+            _service.UpdateEvent(created.Id, "Новое", "Новое", Jan1, Jan1.AddDays(-1), 100));
 
         var unchanged = _service.GetEvent(created.Id);
         Assert.Equal("Исходное название", unchanged.Title);
@@ -637,7 +673,7 @@ public class EventServiceTests
         var created = Add("Исходное название", Jan1);
 
         Assert.Throws<ValidationException>(() =>
-            _service.UpdateEvent(created.Id, "Новое", null, Jan1, Jan1));
+            _service.UpdateEvent(created.Id, "Новое", null, Jan1, Jan1, 100));
 
         var unchanged = _service.GetEvent(created.Id);
         Assert.Equal("Исходное название", unchanged.Title);

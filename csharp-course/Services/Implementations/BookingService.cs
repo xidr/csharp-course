@@ -32,7 +32,7 @@ public class BookingService : IBookingService
     /// <inheritdoc />
     public async Task<Booking> CreateBookingAsync(Guid eventId, CancellationToken ct)
     {
-        if (!_eventService.HasEvent(eventId))
+        if (!await _eventService.HasEventAsync(eventId, ct))
             throw new NotFoundException($"Событие {eventId} не найдено");
 
         var newBooking = new Booking(Guid.NewGuid(), eventId, Booking.BookingStatus.Pending, DateTime.UtcNow);

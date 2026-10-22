@@ -17,61 +17,71 @@ public class EventService : IEventService
     }
 
     /// <inheritdoc />
-    public Event CreateEvent(
-        string title, string? description, DateTime startDate, DateTime endDate, int totalSeats)
+    public async Task<Event> CreateEventAsync(
+        string title,
+        string? description,
+        DateTime startDate,
+        DateTime endDate,
+        int totalSeats,
+        CancellationToken ct)
     {
         var newEventId = Guid.NewGuid();
         var newEvent = Event.Create(newEventId, title, startDate, endDate, description, totalSeats);
-        if (_eventRepository.TryAdd(newEventId, newEvent)) return newEvent;
+        if (await _eventRepository.TryAddAsync(newEventId, newEvent, ct)) return newEvent;
 
         throw new InvalidOperationException($"Не удалось создать событие: {newEventId} уже существует");
     }
 
     /// <inheritdoc />
-    public void DeleteEvent(Guid eventId)
+    public async Task DeleteEventAsync(Guid eventId, CancellationToken ct)
     {
-        if (!_eventRepository.TryRemove(eventId)) throw new NotFoundException($"Событие {eventId} не найдено");
+        if (!await _eventRepository.TryRemoveAsync(eventId, ct))
+            throw new NotFoundException($"Событие {eventId} не найдено");
     }
 
     /// <inheritdoc />
-    public void UpdateEvent(
-        Guid eventId, string title, string? description, DateTime startDate, DateTime endDate, int totalSeats)
+    public async Task UpdateEventAsync(
+        Guid eventId,
+        string title,
+        string? description,
+        DateTime startDate,
+        DateTime endDate,
+        int totalSeats,
+        CancellationToken ct)
     {
-        var updatedEvent = GetEvent(eventId);
+        var updatedEvent = await GetEventAsync(eventId, ct);
         updatedEvent.UpdateDetails(title, startDate, endDate, description, totalSeats);
 
-        if (_eventRepository.TryUpdate(eventId, updatedEvent)) return;
+        if (await _eventRepository.TryUpdateAsync(eventId, updatedEvent, ct)) return;
 
         throw new NotFoundException($"Событие {eventId} не найдено");
     }
 
     /// <inheritdoc />
-    public Event GetEvent(Guid eventId)
+    public async Task<Event> GetEventAsync(Guid eventId, CancellationToken ct)
     {
-        if (_eventRepository.TryGet(eventId, out var foundEvent))
-        {
-            if (foundEvent is null)
-                throw new InvalidOperationException($"Событие {eventId} повреждено: значение в хранилище равно null");
-            return foundEvent;
-        }
-
-        throw new NotFoundException($"Событие {eventId} не найдено");
+        return await _eventRepository.GetAsync(eventId, ct)
+               ?? throw new NotFoundException($"Событие {eventId} не найдено");
     }
 
     /// <inheritdoc />
-    public bool HasEvent(Guid eventId)
+    public Task<bool> HasEventAsync(Guid eventId, CancellationToken ct)
     {
-        return _eventRepository.TryGet(eventId, out _);
+        return _eventRepository.HasEventAsync(eventId, ct);
     }
 
     /// <inheritdoc />
-    public PaginatedResult<Event> GetAllEvents(string? title, DateTime? from, DateTime? to, int page, int pageSize)
+    public Task<PaginatedResult<Event>> GetAllEventsAsync(
+        string? title,
+        DateTime? from,
+        DateTime? to,
+        int page,
+        int pageSize,
+        CancellationToken ct)
     {
         ArgumentOutOfRangeException.ThrowIfLessThan(page, 1);
         ArgumentOutOfRangeException.ThrowIfLessThan(pageSize, 1);
 
-        var result = _eventRepository.TryGetAll(title, from, to, page, pageSize);
-
-        return result;
+        return _eventRepository.GetAllAsync(title, from, to, page, pageSize, ct);
     }
 }

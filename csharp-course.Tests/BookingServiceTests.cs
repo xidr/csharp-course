@@ -21,7 +21,15 @@ public class BookingServiceTests
         new(_bookingRepository, _eventService, NullLogger<BookingService>.Instance, delayMs);
 
     private Event CreateEvent() =>
-        _eventService.CreateEvent("Событие", null, DateTime.UtcNow.AddDays(1), DateTime.UtcNow.AddDays(2), 100);
+        _eventService.CreateEventAsync(
+                "Событие",
+                null,
+                DateTime.UtcNow.AddDays(1),
+                DateTime.UtcNow.AddDays(2),
+                100,
+                NoCancel)
+            .GetAwaiter()
+            .GetResult();
 
     // ---------- Создание брони: успешные сценарии ----------
 
@@ -88,7 +96,7 @@ public class BookingServiceTests
     public async Task CreateBookingAsync_DeletedEvent_ThrowsNotFoundException()
     {
         var deletedEvent = CreateEvent();
-        _eventService.DeleteEvent(deletedEvent.Id);
+        await _eventService.DeleteEventAsync(deletedEvent.Id, NoCancel);
 
         await Assert.ThrowsAsync<NotFoundException>(() =>
             _service.CreateBookingAsync(deletedEvent.Id, NoCancel));

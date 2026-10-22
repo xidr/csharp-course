@@ -33,6 +33,7 @@ public class Event
         TotalSeats = totalSeats;
         AvailableSeats = totalSeats;
     }
+
     /// <summary>
     ///     Создаёт событие с указанным количеством мест
     /// </summary>
@@ -72,12 +73,19 @@ public class Event
     /// </summary>
     public DateTime EndAt { get; private set; }
 
+    /// <summary>
+    ///     Общее количество мест на событии
+    /// </summary>
     public int TotalSeats { get; private set; }
 
-
+    /// <summary>
+    ///     Текущее количество свободных мест
+    /// </summary>
     public int AvailableSeats { get; private set; }
 
-
+    /// <summary>
+    ///     Пытается зарезервировать указанное количество мест
+    /// </summary>
     public bool TryReserveSeats(int count = 1)
     {
         ArgumentOutOfRangeException.ThrowIfLessThan(count, 1);
@@ -91,6 +99,9 @@ public class Event
         }
     }
 
+    /// <summary>
+    ///     Освобождает указанное количество ранее зарезервированных мест
+    /// </summary>
     public void ReleaseSeats(int count = 1)
     {
         ArgumentOutOfRangeException.ThrowIfLessThan(count, 1);
@@ -103,6 +114,7 @@ public class Event
             AvailableSeats += count;
         }
     }
+
     internal void UpdateDetails(
         string title, DateTime startAt, DateTime endAt, string? description, int totalSeats)
     {

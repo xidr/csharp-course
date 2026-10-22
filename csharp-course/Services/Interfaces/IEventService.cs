@@ -15,6 +15,7 @@ public interface IEventService
     /// <param name="startDate">Дата и время начала</param>
     /// <param name="endDate">Дата и время окончания</param>
     /// <param name="totalSeats">Общее количество мест</param>
+    /// <param name="ct">Токен отмены</param>
     /// <returns>Созданное событие</returns>
     /// <exception cref="ValidationException">
     ///     <paramref name="endDate" /> не позже <paramref name="startDate" />
@@ -22,16 +23,23 @@ public interface IEventService
     /// <exception cref="InvalidOperationException">
     ///     Не удалось добавить событие в хранилище: сгенерированный идентификатор уже существует
     /// </exception>
-    Event CreateEvent(string title, string? description, DateTime startDate, DateTime endDate, int totalSeats);
+    Task<Event> CreateEventAsync(
+        string title,
+        string? description,
+        DateTime startDate,
+        DateTime endDate,
+        int totalSeats,
+        CancellationToken ct);
 
     /// <summary>
     ///     Удаляет событие
     /// </summary>
     /// <param name="eventId">Идентификатор события</param>
+    /// <param name="ct">Токен отмены</param>
     /// <exception cref="NotFoundException">
     ///     Событие с указанным идентификатором не найдено
     /// </exception>
-    void DeleteEvent(Guid eventId);
+    Task DeleteEventAsync(Guid eventId, CancellationToken ct);
 
     /// <summary>
     ///     Обновляет существующее событие
@@ -42,34 +50,40 @@ public interface IEventService
     /// <param name="startDate">Новая дата и время начала</param>
     /// <param name="endDate">Новая дата и время окончания</param>
     /// <param name="totalSeats">Новое общее количество мест</param>
+    /// <param name="ct">Токен отмены</param>
     /// <exception cref="ValidationException">
     ///     <paramref name="endDate" /> не позже <paramref name="startDate" />
     /// </exception>
     /// <exception cref="NotFoundException">
     ///     Событие с указанным идентификатором не найдено
     /// </exception>
-    void UpdateEvent(
-        Guid eventId, string title, string? description, DateTime startDate, DateTime endDate, int totalSeats);
+    Task UpdateEventAsync(
+        Guid eventId,
+        string title,
+        string? description,
+        DateTime startDate,
+        DateTime endDate,
+        int totalSeats,
+        CancellationToken ct);
 
     /// <summary>
     ///     Возвращает событие по идентификатору
     /// </summary>
     /// <param name="eventId">Идентификатор события</param>
+    /// <param name="ct">Токен отмены</param>
     /// <returns>Найденное событие</returns>
     /// <exception cref="NotFoundException">
     ///     Событие с указанным идентификатором не найдено
     /// </exception>
-    /// <exception cref="InvalidOperationException">
-    ///     Хранилище вернуло null вместо найденного события
-    /// </exception>
-    Event GetEvent(Guid eventId);
+    Task<Event> GetEventAsync(Guid eventId, CancellationToken ct);
 
     /// <summary>
     ///     Проверяет, существует ли событие с указанным идентификатором
     /// </summary>
     /// <param name="eventId">Идентификатор события</param>
+    /// <param name="ct">Токен отмены</param>
     /// <returns><c>true</c>, если событие существует; иначе <c>false</c></returns>
-    bool HasEvent(Guid eventId);
+    Task<bool> HasEventAsync(Guid eventId, CancellationToken ct);
 
     /// <summary>
     ///     Возвращает страницу событий, удовлетворяющих переданным фильтрам.
@@ -81,7 +95,14 @@ public interface IEventService
     /// <param name="to">События, заканчивающиеся не позже указанной даты</param>
     /// <param name="page">Номер страницы (начиная с 1)</param>
     /// <param name="pageSize">Количество элементов на странице</param>
+    /// <param name="ct">Токен отмены</param>
     /// <returns>Запрошенная страница событий и общее количество подходящих событий</returns>
     /// <exception cref="ArgumentOutOfRangeException"><paramref name="page" /> или <paramref name="pageSize" /> меньше 1</exception>
-    PaginatedResult<Event> GetAllEvents(string? title, DateTime? from, DateTime? to, int page, int pageSize);
+    Task<PaginatedResult<Event>> GetAllEventsAsync(
+        string? title,
+        DateTime? from,
+        DateTime? to,
+        int page,
+        int pageSize,
+        CancellationToken ct);
 }

@@ -189,7 +189,6 @@ public class BookingServiceTests
 
         Assert.Equal(afterFirst, await _service.GetBookingByIdAsync(created.Id, NoCancel));
     }
-    
 
     [Fact]
     [Trait("Category", "Failure")]

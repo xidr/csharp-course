@@ -8,6 +8,7 @@ public class BookingBackgroundService : BackgroundService
     private readonly IBookingService _bookingService;
     private readonly ILogger<BookingBackgroundService> _logger;
     private readonly TimeSpan _pollInterval;
+    private readonly SemaphoreSlim _concurrencySemaphore;
 
     /// <summary>
     ///     Создаёт фоновый сервис обработки броней
@@ -15,11 +16,15 @@ public class BookingBackgroundService : BackgroundService
     /// <param name="logger">Логгер</param>
     /// <param name="bookingService">Сервис бронирований, выполняющий обработку</param>
     /// <param name="pollIntervalMs">Пауза между проверками хранилища на наличие новых броней, мс</param>
+    /// <param name="maxConcurrency">Максимальное число одновременно обрабатываемых броней</param>
     public BookingBackgroundService(
         ILogger<BookingBackgroundService> logger,
         IBookingService bookingService,
-        int pollIntervalMs = 2000)
+        int pollIntervalMs = 2000,
+        int maxConcurrency = 10)
     {
+        ArgumentOutOfRangeException.ThrowIfLessThan(maxConcurrency, 1);
+        _concurrencySemaphore = new SemaphoreSlim(maxConcurrency, maxConcurrency);
         _logger = logger;
         _bookingService = bookingService;
         _pollInterval = TimeSpan.FromMilliseconds(pollIntervalMs);
@@ -62,14 +67,23 @@ public class BookingBackgroundService : BackgroundService
             return;
         }
 
-        foreach (var booking in pending)
-            try
-            {
-                await _bookingService.ProcessBookingAsync(booking.Id, ct);
-            }
-            catch (Exception ex) when (ex is not OperationCanceledException)
-            {
-                _logger.LogError(ex, "Ошибка при обработке брони {BookingId}", booking.Id);
-            }
+        await Task.WhenAll(pending.Select(booking => ProcessBookingAsync(booking, ct)));
+    }
+
+    private async Task ProcessBookingAsync(Booking booking, CancellationToken stoppingToken)
+    {
+        await _concurrencySemaphore.WaitAsync(stoppingToken);
+        try
+        {
+            await _bookingService.ProcessBookingAsync(booking.Id, stoppingToken);
+        }
+        catch (Exception ex) when (ex is not OperationCanceledException)
+        {
+            _logger.LogError(ex, "Ошибка при обработке брони {BookingId}", booking.Id);
+        }
+        finally
+        {
+            _concurrencySemaphore.Release();
+        }
     }
 }

@@ -37,35 +37,28 @@ public class BookingService : IBookingService
         var seatReserved = false;
         var bookingSaved = false;
         Event? bookedEvent = null;
-        
+
         await _bookingSemaphore.WaitAsync(ct);
-        
+
         try
         {
             bookedEvent = await _eventService.GetEventAsync(eventId, ct);
             seatReserved = bookedEvent.TryReserveSeats();
 
-            if (seatReserved)
-            {
-                bookingSaved = await _bookingRepository.TryAddAsync(newBooking, ct);
-            }
-
+            if (seatReserved) bookingSaved = await _bookingRepository.TryAddAsync(newBooking, ct);
         }
         finally
         {
             try
             {
-                if (seatReserved && !bookingSaved)
-                {
-                    bookedEvent?.ReleaseSeats();
-                }
+                if (seatReserved && !bookingSaved) bookedEvent?.ReleaseSeats();
             }
             finally
             {
                 _bookingSemaphore.Release();
             }
         }
-        
+
         if (!seatReserved)
             throw new NoAvailableSeatsException("No available seats for this event");
 
@@ -74,7 +67,7 @@ public class BookingService : IBookingService
                 $"Не удалось сохранить бронь {newBooking.Id}: такой идентификатор уже существует");
 
         _logger.LogInformation("Бронь {BookingId} создана для события {EventId}", newBooking.Id, eventId);
-        
+
         return newBooking;
     }
 
@@ -103,25 +96,60 @@ public class BookingService : IBookingService
             return;
         }
 
-        // имитация обращения к внешней системе
-        await Task.Delay(TimeSpan.FromMilliseconds(_ms), ct);
-
-        var processed = booking with
+        try
         {
-            Status = Booking.BookingStatus.Confirmed,
-            ProcessedAt = DateTime.UtcNow
-        };
+            await Task.Delay(TimeSpan.FromMilliseconds(_ms), ct);
 
-        // сохраняем, только если бронь всё ещё ожидает обработки: защита от параллельного изменения
-        if (!await _bookingRepository.TryUpdateAsync(processed, Booking.BookingStatus.Pending, ct))
+            await ConfirmOrRejectAsync(booking, ct);
+        }
+        catch (OperationCanceledException)
         {
-            _logger.LogInformation(
-                "Бронь {BookingId} уже изменена другим процессом, результат обработки отброшен", booking.Id);
+            throw;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Непредвиденная ошибка при обработке брони {BookingId}", booking.Id);
+            await RejectAndReleaseSeatAsync(booking);
+        }
+    }
+
+    private async Task ConfirmOrRejectAsync(Booking booking, CancellationToken ct)
+    {
+        if (!await _eventService.HasEventAsync(booking.EventId, ct))
+        {
+            // событие удалено: возвращать место некуда
+            if (await _bookingRepository.TryUpdateAsync(booking.Reject(), Booking.BookingStatus.Pending, ct))
+                _logger.LogWarning("Бронь {BookingId} отклонена: событие {EventId} не найдено", booking.Id, booking.EventId);
+
             return;
         }
 
-        _logger.LogInformation(
-            "Бронь {BookingId} обработана: статус {Status}, создана {CreatedAt}, обработана {ProcessedAt}",
+        var processed = booking.Confirm();
+
+        if (!await _bookingRepository.TryUpdateAsync(processed, Booking.BookingStatus.Pending, ct))
+        {
+            _logger.LogInformation("Бронь {BookingId} уже изменена другим процессом, результат обработки отброшен", booking.Id);
+            return;
+        }
+
+        _logger.LogInformation("Бронь {BookingId} обработана: статус {Status}, создана {CreatedAt}, обработана {ProcessedAt}",
             processed.Id, processed.Status, processed.CreatedAt, processed.ProcessedAt);
+    }
+
+    private async Task RejectAndReleaseSeatAsync(Booking booking)
+    {
+        try
+        {
+            if (!await _bookingRepository.TryUpdateAsync(
+                    booking.Reject(), Booking.BookingStatus.Pending, CancellationToken.None))
+                return;
+
+            if (await _eventService.HasEventAsync(booking.EventId, CancellationToken.None))
+                (await _eventService.GetEventAsync(booking.EventId, CancellationToken.None)).ReleaseSeats();
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Не удалось отклонить бронь {BookingId} и вернуть место", booking.Id);
+        }
     }
 }

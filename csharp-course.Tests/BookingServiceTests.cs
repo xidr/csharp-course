@@ -266,6 +266,89 @@ public class BookingServiceTests
         Assert.Null(found.ProcessedAt);
     }
 
+    [Fact]
+    [Trait("Category", "Failure")]
+    [Trait("Feature", "Process")]
+    public async Task ProcessBookingAsync_EventDeleted_RejectsBooking()
+    {
+        var existingEvent = CreateEvent();
+        var created = await _service.CreateBookingAsync(existingEvent.Id, NoCancel);
+        await _eventService.DeleteEventAsync(existingEvent.Id, NoCancel);
+
+        await _service.ProcessBookingAsync(created.Id, NoCancel);
+
+        var processed = await _service.GetBookingByIdAsync(created.Id, NoCancel);
+        Assert.Equal(Booking.BookingStatus.Rejected, processed.Status);
+        Assert.NotNull(processed.ProcessedAt);
+    }
+
+    [Fact]
+    [Trait("Category", "Failure")]
+    [Trait("Feature", "Process")]
+    public async Task ProcessBookingAsync_UnexpectedError_RejectsBookingAndReleasesSeat()
+    {
+        var existingEvent = CreateEvent();
+        var seatsBefore = existingEvent.AvailableSeats;
+        var failingEvents = new ThrowingHasEventService(_eventService);
+        var service = new BookingService(
+            _bookingRepository, failingEvents, NullLogger<BookingService>.Instance, 0);
+        var created = await service.CreateBookingAsync(existingEvent.Id, NoCancel);
+        Assert.Equal(seatsBefore - 1, existingEvent.AvailableSeats);
+        failingEvents.ShouldThrow = true;
+
+        await service.ProcessBookingAsync(created.Id, NoCancel);
+
+        var processed = await service.GetBookingByIdAsync(created.Id, NoCancel);
+        Assert.Equal(Booking.BookingStatus.Rejected, processed.Status);
+        Assert.Equal(seatsBefore, existingEvent.AvailableSeats);
+    }
+
+    [Fact]
+    [Trait("Category", "Success")]
+    [Trait("Feature", "Concurrency")]
+    public async Task ProcessBookingAsync_ManyBookingsInParallel_AllConfirmedAndDelaysOverlap()
+    {
+        var slowService = CreateService(delayMs: 300);
+        var existingEvent = CreateEvent();
+        var bookings = new List<Booking>();
+        for (var i = 0; i < 10; i++)
+            bookings.Add(await slowService.CreateBookingAsync(existingEvent.Id, NoCancel));
+
+        var started = DateTime.UtcNow;
+        await Task.WhenAll(bookings.Select(b => slowService.ProcessBookingAsync(b.Id, NoCancel)));
+        var elapsed = DateTime.UtcNow - started;
+
+        Assert.True(elapsed < TimeSpan.FromMilliseconds(2000), $"Обработка не параллельна: {elapsed}");
+        foreach (var b in bookings)
+            Assert.Equal(Booking.BookingStatus.Confirmed, (await slowService.GetBookingByIdAsync(b.Id, NoCancel)).Status);
+    }
+
+    /// <summary>Обёртка над сервисом событий, у которой проверка существования события может падать</summary>
+    private sealed class ThrowingHasEventService(IEventService inner) : IEventService
+    {
+        public bool ShouldThrow { get; set; }
+
+        public Task<bool> HasEventAsync(Guid eventId, CancellationToken ct) =>
+            ShouldThrow && !ct.IsCancellationRequested && Interlocked.Exchange(ref _thrown, 1) == 0
+                ? throw new InvalidOperationException("boom")
+                : inner.HasEventAsync(eventId, ct);
+
+        private int _thrown;
+
+        public Task<Event> CreateEventAsync(string title, string? description, DateTime startDate, DateTime endDate, int totalSeats, CancellationToken ct) =>
+            inner.CreateEventAsync(title, description, startDate, endDate, totalSeats, ct);
+
+        public Task DeleteEventAsync(Guid eventId, CancellationToken ct) => inner.DeleteEventAsync(eventId, ct);
+
+        public Task UpdateEventAsync(Guid eventId, string title, string? description, DateTime startDate, DateTime endDate, int totalSeats, CancellationToken ct) =>
+            inner.UpdateEventAsync(eventId, title, description, startDate, endDate, totalSeats, ct);
+
+        public Task<Event> GetEventAsync(Guid eventId, CancellationToken ct) => inner.GetEventAsync(eventId, ct);
+
+        public Task<PaginatedResult<Event>> GetAllEventsAsync(string? title, DateTime? from, DateTime? to, int page, int pageSize, CancellationToken ct) =>
+            inner.GetAllEventsAsync(title, from, to, page, pageSize, ct);
+    }
+
     // ---------- Брони в ожидании ----------
 
     [Fact]

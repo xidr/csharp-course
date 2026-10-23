@@ -9,6 +9,7 @@ public class BookingService : IBookingService
     private readonly IEventService _eventService;
     private readonly ILogger<BookingService> _logger;
     private readonly int _ms;
+    private readonly SemaphoreSlim _bookingSemaphore = new(1, 1);
 
     /// <summary>
     ///     Создаёт сервис бронирований
@@ -32,17 +33,48 @@ public class BookingService : IBookingService
     /// <inheritdoc />
     public async Task<Booking> CreateBookingAsync(Guid eventId, CancellationToken ct)
     {
-        if (!await _eventService.HasEventAsync(eventId, ct))
-            throw new NotFoundException($"Событие {eventId} не найдено");
-
         var newBooking = new Booking(Guid.NewGuid(), eventId, Booking.BookingStatus.Pending, DateTime.UtcNow);
+        var seatReserved = false;
+        var bookingSaved = false;
+        Event? bookedEvent = null;
+        
+        await _bookingSemaphore.WaitAsync(ct);
+        
+        try
+        {
+            bookedEvent = await _eventService.GetEventAsync(eventId, ct);
+            seatReserved = bookedEvent.TryReserveSeats();
 
-        if (!await _bookingRepository.TryAddAsync(newBooking, ct))
+            if (seatReserved)
+            {
+                bookingSaved = await _bookingRepository.TryAddAsync(newBooking, ct);
+            }
+
+        }
+        finally
+        {
+            try
+            {
+                if (seatReserved && !bookingSaved)
+                {
+                    bookedEvent?.ReleaseSeats();
+                }
+            }
+            finally
+            {
+                _bookingSemaphore.Release();
+            }
+        }
+        
+        if (!seatReserved)
+            throw new NoAvailableSeatsException("No available seats for this event");
+
+        if (!bookingSaved)
             throw new InvalidOperationException(
                 $"Не удалось сохранить бронь {newBooking.Id}: такой идентификатор уже существует");
 
         _logger.LogInformation("Бронь {BookingId} создана для события {EventId}", newBooking.Id, eventId);
-
+        
         return newBooking;
     }
 

@@ -13,6 +13,7 @@ public interface IBookingService
     /// <param name="ct">Токен отмены</param>
     /// <returns>Созданная бронь</returns>
     /// <exception cref="NotFoundException">Событие не найдено (в том числе удалено)</exception>
+    /// <exception cref="NoAvailableSeatsException">На событии нет свободных мест</exception>
     Task<Booking> CreateBookingAsync(Guid eventId, CancellationToken ct);
 
     /// <summary>

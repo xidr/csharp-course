@@ -80,6 +80,48 @@ public class BookingServiceTests
     // ---------- Создание брони: неуспешные сценарии ----------
 
     [Fact]
+    [Trait("Feature", "Concurrency")]
+    public async Task CreateBookingAsync_ConcurrentRequests_OnlyAvailableSeatsAreBooked()
+    {
+        var existingEvent = await _eventService.CreateEventAsync(
+            "Событие", null, DateTime.UtcNow.AddDays(1), DateTime.UtcNow.AddDays(2), 5, NoCancel);
+
+        var attempts = Enumerable.Range(0, 40).Select(_ => Task.Run(async () =>
+        {
+            try
+            {
+                await _service.CreateBookingAsync(existingEvent.Id, NoCancel);
+                return true;
+            }
+            catch (NoAvailableSeatsException ex)
+            {
+                Assert.Equal("No available seats for this event", ex.Message);
+                return false;
+            }
+        }));
+
+        var results = await Task.WhenAll(attempts);
+        Assert.Equal(5, results.Count(success => success));
+        Assert.Equal(0, existingEvent.AvailableSeats);
+        Assert.Equal(5, (await _service.GetPendingAsync(NoCancel)).Count);
+    }
+
+    [Fact]
+    public async Task CreateBookingAsync_CancelledRequest_DoesNotConsumeSeatOrBlockNextRequest()
+    {
+        var existingEvent = CreateEvent();
+        using var cts = new CancellationTokenSource();
+        cts.Cancel();
+
+        await Assert.ThrowsAnyAsync<OperationCanceledException>(() =>
+            _service.CreateBookingAsync(existingEvent.Id, cts.Token));
+
+        Assert.Equal(100, existingEvent.AvailableSeats);
+        await _service.CreateBookingAsync(existingEvent.Id, NoCancel);
+        Assert.Equal(99, existingEvent.AvailableSeats);
+    }
+
+    [Fact]
     [Trait("Category", "Failure")]
     [Trait("Feature", "Create")]
     public async Task CreateBookingAsync_NonExistingEvent_ThrowsNotFoundExceptionAndStoresNothing()

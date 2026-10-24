@@ -11,6 +11,16 @@ public class BookingBackgroundService : BackgroundService
     private readonly SemaphoreSlim _concurrencySemaphore;
 
     /// <summary>
+    ///     Пауза между проверками хранилища по умолчанию, мс
+    /// </summary>
+    public const int DefaultPollIntervalMs = 2000;
+
+    /// <summary>
+    ///     Максимальное число одновременно обрабатываемых броней по умолчанию
+    /// </summary>
+    public const int DefaultMaxConcurrency = 10;
+
+    /// <summary>
     ///     Создаёт фоновый сервис обработки броней
     /// </summary>
     /// <param name="logger">Логгер</param>
@@ -20,8 +30,8 @@ public class BookingBackgroundService : BackgroundService
     public BookingBackgroundService(
         ILogger<BookingBackgroundService> logger,
         IBookingService bookingService,
-        int pollIntervalMs = 2000,
-        int maxConcurrency = 10)
+        int pollIntervalMs = DefaultPollIntervalMs,
+        int maxConcurrency = DefaultMaxConcurrency)
     {
         ArgumentOutOfRangeException.ThrowIfLessThan(maxConcurrency, 1);
         _concurrencySemaphore = new SemaphoreSlim(maxConcurrency, maxConcurrency);
@@ -66,6 +76,10 @@ public class BookingBackgroundService : BackgroundService
             _logger.LogError(ex, "Не удалось получить брони в ожидании");
             return;
         }
+
+        if (pending.Count == 0) return;
+
+        _logger.LogInformation("Найдено броней в ожидании: {Count}, запускаем параллельную обработку", pending.Count);
 
         await Task.WhenAll(pending.Select(booking => ProcessBookingAsync(booking, ct)));
     }

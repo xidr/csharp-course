@@ -8,8 +8,13 @@ public class BookingService : IBookingService
     private readonly IBookingRepository _bookingRepository;
     private readonly IEventService _eventService;
     private readonly ILogger<BookingService> _logger;
-    private readonly int _ms;
+    private readonly TimeSpan _processingDelay;
     private readonly SemaphoreSlim _bookingSemaphore = new(1, 1);
+
+    /// <summary>
+    ///     Длительность искусственной задержки при обработке брони по умолчанию, мс
+    /// </summary>
+    public const int DefaultProcessingDelayMs = 1000;
 
     /// <summary>
     ///     Создаёт сервис бронирований
@@ -22,12 +27,12 @@ public class BookingService : IBookingService
         IBookingRepository bookingRepository,
         IEventService eventService,
         ILogger<BookingService> logger,
-        int ms = 1000)
+        int ms = DefaultProcessingDelayMs)
     {
         _bookingRepository = bookingRepository;
         _eventService = eventService;
         _logger = logger;
-        _ms = ms;
+        _processingDelay = TimeSpan.FromMilliseconds(ms);
     }
 
     /// <inheritdoc />
@@ -36,13 +41,12 @@ public class BookingService : IBookingService
         var newBooking = new Booking(Guid.NewGuid(), eventId, Booking.BookingStatus.Pending, DateTime.UtcNow);
         var seatReserved = false;
         var bookingSaved = false;
-        Event? bookedEvent = null;
+        var bookedEvent = await _eventService.GetEventAsync(eventId, ct);
 
         await _bookingSemaphore.WaitAsync(ct);
 
         try
         {
-            bookedEvent = await _eventService.GetEventAsync(eventId, ct);
             seatReserved = bookedEvent.TryReserveSeats();
 
             if (seatReserved) bookingSaved = await _bookingRepository.TryAddAsync(newBooking, ct);
@@ -51,7 +55,7 @@ public class BookingService : IBookingService
         {
             try
             {
-                if (seatReserved && !bookingSaved) bookedEvent?.ReleaseSeats();
+                if (seatReserved && !bookingSaved) bookedEvent.ReleaseSeats();
             }
             finally
             {
@@ -96,14 +100,19 @@ public class BookingService : IBookingService
             return;
         }
 
+        _logger.LogInformation(
+            "Начата обработка брони {BookingId}, поток {ThreadId}", booking.Id, Environment.CurrentManagedThreadId);
+
         try
         {
-            await Task.Delay(TimeSpan.FromMilliseconds(_ms), ct);
+            // имитация обращения к внешней системе
+            await Task.Delay(_processingDelay, ct);
 
             await ConfirmOrRejectAsync(booking, ct);
         }
         catch (OperationCanceledException)
         {
+            // бронь остаётся Pending и будет обработана позже
             throw;
         }
         catch (Exception ex)
@@ -117,7 +126,6 @@ public class BookingService : IBookingService
     {
         if (!await _eventService.HasEventAsync(booking.EventId, ct))
         {
-            // событие удалено: возвращать место некуда
             if (await _bookingRepository.TryUpdateAsync(booking.Reject(), Booking.BookingStatus.Pending, ct))
                 _logger.LogWarning("Бронь {BookingId} отклонена: событие {EventId} не найдено", booking.Id, booking.EventId);
 

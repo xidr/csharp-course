@@ -112,7 +112,7 @@ public class BookingService : IBookingService
         }
         catch (OperationCanceledException)
         {
-            // бронь остаётся Pending и будет обработана позже
+            // отмена возможна только при остановке приложения: бронь остаётся Pending, не отклоняем её
             throw;
         }
         catch (Exception ex)

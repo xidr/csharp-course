@@ -7,8 +7,35 @@ namespace csharp_course.Tests;
 public class EventServiceTests
 {
     private static readonly DateTime Jan1 = new(2026, 1, 1, 10, 0, 0);
+    private static readonly CancellationToken NoCancel = CancellationToken.None;
 
     private readonly EventService _service = new(new EventRepositoryInMemoryDict());
+
+    private Event CreateEvent(
+        string title, string? description, DateTime startAt, DateTime endAt, int totalSeats)
+    {
+        return _service.CreateEventAsync(title, description, startAt, endAt, totalSeats, NoCancel)
+            .GetAwaiter()
+            .GetResult();
+    }
+
+    private Event GetEvent(Guid eventId)
+    {
+        return _service.GetEventAsync(eventId, NoCancel).GetAwaiter().GetResult();
+    }
+
+    private void UpdateEvent(
+        Guid eventId, string title, string? description, DateTime startAt, DateTime endAt, int totalSeats)
+    {
+        _service.UpdateEventAsync(eventId, title, description, startAt, endAt, totalSeats, NoCancel)
+            .GetAwaiter()
+            .GetResult();
+    }
+
+    private void DeleteEvent(Guid eventId)
+    {
+        _service.DeleteEventAsync(eventId, NoCancel).GetAwaiter().GetResult();
+    }
 
     private static DateTime Day(int month, int day, int hour = 10)
     {
@@ -18,13 +45,15 @@ public class EventServiceTests
     /// <summary>Создаёт событие длительностью 2 часа, начинающееся в указанное время</summary>
     private Event Add(string title, DateTime startAt, string? description = null)
     {
-        return _service.CreateEvent(title, description, startAt, startAt.AddHours(2));
+        return CreateEvent(title, description, startAt, startAt.AddHours(2), 100);
     }
 
     private PaginatedResult<Event> Query(
         string? title = null, DateTime? from = null, DateTime? to = null, int page = 1, int pageSize = 100)
     {
-        return _service.GetAllEvents(title, from, to, page, pageSize);
+        return _service.GetAllEventsAsync(title, from, to, page, pageSize, NoCancel)
+            .GetAwaiter()
+            .GetResult();
     }
 
     private static string[] Titles(PaginatedResult<Event> result)
@@ -39,14 +68,16 @@ public class EventServiceTests
     [Trait("Feature", "Create")]
     public void CreateEvent_ValidData_ReturnsEventAndStoresIt()
     {
-        var created = _service.CreateEvent("Концерт", "Описание", Jan1, Jan1.AddHours(3));
+        var created = CreateEvent("Концерт", "Описание", Jan1, Jan1.AddHours(3), 50);
 
         Assert.NotEqual(Guid.Empty, created.Id);
         Assert.Equal("Концерт", created.Title);
         Assert.Equal("Описание", created.Description);
         Assert.Equal(Jan1, created.StartAt);
         Assert.Equal(Jan1.AddHours(3), created.EndAt);
-        Assert.Same(created, _service.GetEvent(created.Id));
+        Assert.Equal(50, created.TotalSeats);
+        Assert.Equal(50, created.AvailableSeats);
+        Assert.Same(created, GetEvent(created.Id));
     }
 
     [Fact]
@@ -54,7 +85,7 @@ public class EventServiceTests
     [Trait("Feature", "Create")]
     public void CreateEvent_NullDescription_StoresEmptyString()
     {
-        var created = _service.CreateEvent("Концерт", null, Jan1, Jan1.AddHours(1));
+        var created = CreateEvent("Концерт", null, Jan1, Jan1.AddHours(1), 100);
 
         Assert.Equal(string.Empty, created.Description);
     }
@@ -117,7 +148,7 @@ public class EventServiceTests
     {
         var created = Add("Событие", Jan1);
 
-        var found = _service.GetEvent(created.Id);
+        var found = GetEvent(created.Id);
 
         Assert.Equal(created.Id, found.Id);
         Assert.Equal("Событие", found.Title);
@@ -132,14 +163,16 @@ public class EventServiceTests
         var newStart = Day(5, 1);
         var newEnd = Day(5, 2);
 
-        _service.UpdateEvent(created.Id, "Новое название", "Новое описание", newStart, newEnd);
+        UpdateEvent(created.Id, "Новое название", "Новое описание", newStart, newEnd, 150);
 
-        var updated = _service.GetEvent(created.Id);
+        var updated = GetEvent(created.Id);
         Assert.Equal(created.Id, updated.Id);
         Assert.Equal("Новое название", updated.Title);
         Assert.Equal("Новое описание", updated.Description);
         Assert.Equal(newStart, updated.StartAt);
         Assert.Equal(newEnd, updated.EndAt);
+        Assert.Equal(150, updated.TotalSeats);
+        Assert.Equal(150, updated.AvailableSeats);
     }
 
     [Fact]
@@ -149,9 +182,41 @@ public class EventServiceTests
     {
         var created = Add("Событие", Jan1);
 
-        _service.UpdateEvent(created.Id, "Другое", null, Jan1, Jan1.AddHours(1));
+        UpdateEvent(created.Id, "Другое", null, Jan1, Jan1.AddHours(1), 100);
 
         Assert.Equal(1, Query().TotalCount);
+    }
+
+    [Fact]
+    [Trait("Category", "Success")]
+    [Trait("Feature", "Update")]
+    public void UpdateEvent_ExistingId_UpdatesCapacityAndPreservesReservedSeats()
+    {
+        var created = Add("Событие", Jan1);
+        created.TryReserveSeats(7);
+
+        UpdateEvent(created.Id, "Другое", null, Jan1, Jan1.AddHours(1), 120);
+
+        var updated = GetEvent(created.Id);
+        Assert.Equal(120, updated.TotalSeats);
+        Assert.Equal(113, updated.AvailableSeats);
+    }
+
+    [Fact]
+    [Trait("Category", "Failure")]
+    [Trait("Feature", "Update")]
+    public void UpdateEvent_TotalSeatsBelowReservedSeats_ThrowsAndLeavesEventUnchanged()
+    {
+        var created = Add("Событие", Jan1);
+        created.TryReserveSeats(7);
+
+        Assert.Throws<ValidationException>(() =>
+            UpdateEvent(created.Id, "Другое", null, Jan1, Jan1.AddHours(1), 6));
+
+        var unchanged = GetEvent(created.Id);
+        Assert.Equal("Событие", unchanged.Title);
+        Assert.Equal(100, unchanged.TotalSeats);
+        Assert.Equal(93, unchanged.AvailableSeats);
     }
 
     [Fact]
@@ -162,9 +227,9 @@ public class EventServiceTests
         var kept = Add("Останется", Day(1, 1));
         var removed = Add("Будет удалено", Day(1, 2));
 
-        _service.DeleteEvent(removed.Id);
+        DeleteEvent(removed.Id);
 
-        Assert.Throws<NotFoundException>(() => _service.GetEvent(removed.Id));
+        Assert.Throws<NotFoundException>(() => GetEvent(removed.Id));
         Assert.Equal(new[] { kept.Title }, Titles(Query()));
     }
 
@@ -236,7 +301,7 @@ public class EventServiceTests
     public void GetAllEvents_FilterByTo_ReturnsEventsEndingNotLater()
     {
         Add("Раньше", Day(1, 1)); // заканчивается 1 янв 12:00
-        _service.CreateEvent("Ровно в границу", null, Day(2, 1), Day(2, 1, 20)); // заканчивается в 20:00
+        CreateEvent("Ровно в границу", null, Day(2, 1), Day(2, 1, 20), 100); // заканчивается в 20:00
         Add("Позже", Day(3, 1));
 
         var result = Query(to: Day(2, 1, 20));
@@ -264,7 +329,7 @@ public class EventServiceTests
     [Trait("Feature", "Filtering")]
     public void GetAllEvents_EventStartingInsideButEndingAfterTo_IsExcluded()
     {
-        _service.CreateEvent("Выходит за границу", null, Day(2, 1), Day(3, 5));
+        CreateEvent("Выходит за границу", null, Day(2, 1), Day(3, 5), 100);
 
         var result = Query(from: Day(1, 1), to: Day(2, 28));
 
@@ -387,7 +452,7 @@ public class EventServiceTests
     [Trait("Feature", "Read")]
     public void GetEvent_NonExistingId_ThrowsNotFoundException()
     {
-        Assert.Throws<NotFoundException>(() => _service.GetEvent(Guid.NewGuid()));
+        Assert.Throws<NotFoundException>(() => GetEvent(Guid.NewGuid()));
     }
 
     [Fact]
@@ -396,7 +461,7 @@ public class EventServiceTests
     public void UpdateEvent_NonExistingId_ThrowsNotFoundException()
     {
         Assert.Throws<NotFoundException>(() =>
-            _service.UpdateEvent(Guid.NewGuid(), "Название", null, Jan1, Jan1.AddHours(1)));
+            UpdateEvent(Guid.NewGuid(), "Название", null, Jan1, Jan1.AddHours(1), 100));
     }
 
     [Fact]
@@ -405,7 +470,7 @@ public class EventServiceTests
     public void UpdateEvent_NonExistingId_DoesNotCreateEvent()
     {
         Assert.Throws<NotFoundException>(() =>
-            _service.UpdateEvent(Guid.NewGuid(), "Название", null, Jan1, Jan1.AddHours(1)));
+            UpdateEvent(Guid.NewGuid(), "Название", null, Jan1, Jan1.AddHours(1), 100));
 
         Assert.Equal(0, Query().TotalCount);
     }
@@ -415,7 +480,7 @@ public class EventServiceTests
     [Trait("Feature", "Delete")]
     public void DeleteEvent_NonExistingId_ThrowsNotFoundException()
     {
-        Assert.Throws<NotFoundException>(() => _service.DeleteEvent(Guid.NewGuid()));
+        Assert.Throws<NotFoundException>(() => DeleteEvent(Guid.NewGuid()));
     }
 
     [Fact]
@@ -424,7 +489,7 @@ public class EventServiceTests
     public void CreateEvent_EndBeforeStart_ThrowsValidationException()
     {
         Assert.Throws<ValidationException>(() =>
-            _service.CreateEvent("Событие", null, Jan1, Jan1.AddHours(-1)));
+            CreateEvent("Событие", null, Jan1, Jan1.AddHours(-1), 100));
 
         Assert.Equal(0, Query().TotalCount);
     }
@@ -435,7 +500,7 @@ public class EventServiceTests
     public void CreateEvent_EndEqualsStart_ThrowsValidationException()
     {
         Assert.Throws<ValidationException>(() =>
-            _service.CreateEvent("Событие", null, Jan1, Jan1));
+            CreateEvent("Событие", null, Jan1, Jan1, 100));
     }
 
     [Fact]
@@ -446,7 +511,7 @@ public class EventServiceTests
         var created = Add("Событие", Jan1);
 
         Assert.Throws<ValidationException>(() =>
-            _service.UpdateEvent(created.Id, "Новое", null, Jan1, Jan1.AddDays(-1)));
+            UpdateEvent(created.Id, "Новое", null, Jan1, Jan1.AddDays(-1), 100));
     }
 
     [Fact]
@@ -457,9 +522,9 @@ public class EventServiceTests
         var created = Add("Исходное название", Jan1, "Исходное описание");
 
         Assert.Throws<ValidationException>(() =>
-            _service.UpdateEvent(created.Id, "Новое", "Новое", Jan1, Jan1.AddDays(-1)));
+            UpdateEvent(created.Id, "Новое", "Новое", Jan1, Jan1.AddDays(-1), 100));
 
-        var unchanged = _service.GetEvent(created.Id);
+        var unchanged = GetEvent(created.Id);
         Assert.Equal("Исходное название", unchanged.Title);
         Assert.Equal("Исходное описание", unchanged.Description);
         Assert.Equal(Jan1, unchanged.StartAt);
@@ -637,9 +702,9 @@ public class EventServiceTests
         var created = Add("Исходное название", Jan1);
 
         Assert.Throws<ValidationException>(() =>
-            _service.UpdateEvent(created.Id, "Новое", null, Jan1, Jan1));
+            UpdateEvent(created.Id, "Новое", null, Jan1, Jan1, 100));
 
-        var unchanged = _service.GetEvent(created.Id);
+        var unchanged = GetEvent(created.Id);
         Assert.Equal("Исходное название", unchanged.Title);
         Assert.Equal(Jan1.AddHours(2), unchanged.EndAt);
     }
@@ -650,9 +715,9 @@ public class EventServiceTests
     public void DeleteEvent_CalledTwice_SecondCallThrowsNotFoundException()
     {
         var created = Add("Событие", Jan1);
-        _service.DeleteEvent(created.Id);
+        DeleteEvent(created.Id);
 
-        Assert.Throws<NotFoundException>(() => _service.DeleteEvent(created.Id));
+        Assert.Throws<NotFoundException>(() => DeleteEvent(created.Id));
     }
 
     [Fact]
@@ -662,6 +727,29 @@ public class EventServiceTests
     {
         Add("Событие", Jan1);
 
-        Assert.Throws<NotFoundException>(() => _service.GetEvent(Guid.Empty));
+        Assert.Throws<NotFoundException>(() => GetEvent(Guid.Empty));
+    }
+
+    [Fact]
+    [Trait("Category", "Failure")]
+    [Trait("Feature", "Cancellation")]
+    public async Task AsyncMethods_CancelledToken_ThrowOperationCanceledException()
+    {
+        using var cts = new CancellationTokenSource();
+        await cts.CancelAsync();
+        var ct = cts.Token;
+
+        await Assert.ThrowsAnyAsync<OperationCanceledException>(() =>
+            _service.CreateEventAsync("Событие", null, Jan1, Jan1.AddHours(1), 100, ct));
+        await Assert.ThrowsAnyAsync<OperationCanceledException>(() =>
+            _service.GetEventAsync(Guid.NewGuid(), ct));
+        await Assert.ThrowsAnyAsync<OperationCanceledException>(() =>
+            _service.HasEventAsync(Guid.NewGuid(), ct));
+        await Assert.ThrowsAnyAsync<OperationCanceledException>(() =>
+            _service.GetAllEventsAsync(null, null, null, 1, 10, ct));
+        await Assert.ThrowsAnyAsync<OperationCanceledException>(() =>
+            _service.UpdateEventAsync(Guid.NewGuid(), "Событие", null, Jan1, Jan1.AddHours(1), 100, ct));
+        await Assert.ThrowsAnyAsync<OperationCanceledException>(() =>
+            _service.DeleteEventAsync(Guid.NewGuid(), ct));
     }
 }

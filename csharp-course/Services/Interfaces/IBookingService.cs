@@ -13,6 +13,7 @@ public interface IBookingService
     /// <param name="ct">Токен отмены</param>
     /// <returns>Созданная бронь</returns>
     /// <exception cref="NotFoundException">Событие не найдено (в том числе удалено)</exception>
+    /// <exception cref="NoAvailableSeatsException">На событии нет свободных мест</exception>
     Task<Booking> CreateBookingAsync(Guid eventId, CancellationToken ct);
 
     /// <summary>
@@ -34,7 +35,9 @@ public interface IBookingService
     /// <summary>
     ///     Обрабатывает бронь: имитирует обращение к внешней системе, затем переводит бронь
     ///     в статус <see cref="Booking.BookingStatus.Confirmed" /> и заполняет дату обработки.
-    ///     Если бронь уже обработана, ничего не делает
+    ///     Если событие удалено или произошла непредвиденная ошибка, бронь переходит в статус
+    ///     <see cref="Booking.BookingStatus.Rejected" />, а место возвращается в пул (если событие существует).
+    ///     Если бронь уже обработана, ничего не делает. При отмене бронь остаётся в ожидании
     /// </summary>
     /// <param name="bookingId">Идентификатор брони</param>
     /// <param name="ct">Токен отмены</param>

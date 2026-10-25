@@ -8,6 +8,15 @@ namespace csharp_course.Tests;
 [Trait("Middleware", "GlobalExceptionHandling")]
 public class GlobalExceptionHandlingMiddlewareTests
 {
+    [Fact]
+    public async Task InvokeAsync_NoAvailableSeatsException_Returns409()
+    {
+        using var body = new MemoryStream();
+        var context = await RunInstance(new NoAvailableSeatsException("No available seats for this event"), body);
+        await AssertContext(context, StatusCodes.Status409Conflict,
+            "application/problem+json", "No available seats for this event");
+    }
+
     private static async Task<DefaultHttpContext> RunInstance(Exception exception, Stream body)
     {
         // Arrange

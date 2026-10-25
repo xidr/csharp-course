@@ -11,43 +11,62 @@ public class EventRepositoryInMemoryDict : IEventRepository
 
 
     /// <inheritdoc />
-    public bool TryAdd(Guid newEventId, Event newEvent)
+    public Task<bool> TryAddAsync(Guid newEventId, Event newEvent, CancellationToken ct = default)
     {
-        return _events.TryAdd(newEventId, newEvent);
+        ct.ThrowIfCancellationRequested();
+
+        return Task.FromResult(_events.TryAdd(newEventId, newEvent));
     }
 
 
     /// <inheritdoc />
-    public bool TryGet(Guid eventId, out Event? foundEvent)
+    public Task<Event?> GetAsync(Guid eventId, CancellationToken ct = default)
     {
-        return _events.TryGetValue(eventId, out foundEvent);
+        ct.ThrowIfCancellationRequested();
+
+        _events.TryGetValue(eventId, out var foundEvent);
+        return Task.FromResult(foundEvent);
     }
 
     /// <inheritdoc />
-    public bool HasEvent(Guid eventId)
+    public Task<bool> HasEventAsync(Guid eventId, CancellationToken ct = default)
     {
-        return _events.ContainsKey(eventId);
+        ct.ThrowIfCancellationRequested();
+
+        return Task.FromResult(_events.ContainsKey(eventId));
     }
 
     /// <inheritdoc />
-    public bool TryUpdate(Guid eventId, Event newEvent)
+    public Task<bool> TryUpdateAsync(Guid eventId, Event newEvent, CancellationToken ct = default)
     {
+        ct.ThrowIfCancellationRequested();
+
         while (_events.TryGetValue(eventId, out var current))
             if (_events.TryUpdate(eventId, newEvent, current))
-                return true;
+                return Task.FromResult(true);
 
-        return false;
+        return Task.FromResult(false);
     }
 
     /// <inheritdoc />
-    public bool TryRemove(Guid eventId)
+    public Task<bool> TryRemoveAsync(Guid eventId, CancellationToken ct = default)
     {
-        return _events.TryRemove(eventId, out _);
+        ct.ThrowIfCancellationRequested();
+
+        return Task.FromResult(_events.TryRemove(eventId, out _));
     }
 
     /// <inheritdoc />
-    public PaginatedResult<Event> TryGetAll(string? title, DateTime? from, DateTime? to, int page, int pageSize)
+    public Task<PaginatedResult<Event>> GetAllAsync(
+        string? title,
+        DateTime? from,
+        DateTime? to,
+        int page,
+        int pageSize,
+        CancellationToken ct = default)
     {
+        ct.ThrowIfCancellationRequested();
+
         IEnumerable<Event> events = _events.Values;
 
         if (!string.IsNullOrWhiteSpace(title))
@@ -68,6 +87,6 @@ public class EventRepositoryInMemoryDict : IEventRepository
 
         var result = new PaginatedResult<Event>(items, filtered.Count(), page, pageSize);
 
-        return result;
+        return Task.FromResult(result);
     }
 }

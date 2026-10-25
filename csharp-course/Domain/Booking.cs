@@ -61,4 +61,14 @@ public record Booking
     ///     Дата и время обработки брони (UTC); <c>null</c>, пока бронь не обработана
     /// </summary>
     public DateTime? ProcessedAt { get; init; }
+
+    /// <summary>
+    ///     Возвращает копию брони в статусе <see cref="BookingStatus.Confirmed" /> с заполненной датой обработки
+    /// </summary>
+    public Booking Confirm() => this with { Status = BookingStatus.Confirmed, ProcessedAt = DateTime.UtcNow };
+
+    /// <summary>
+    ///     Возвращает копию брони в статусе <see cref="BookingStatus.Rejected" /> с заполненной датой обработки
+    /// </summary>
+    public Booking Reject() => this with { Status = BookingStatus.Rejected, ProcessedAt = DateTime.UtcNow };
 }

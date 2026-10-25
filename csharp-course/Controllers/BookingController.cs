@@ -35,7 +35,9 @@ public class BookingsController : ControllerBase
     ///     Возвращается HTTP статус-код 404 Not Found в случае
     ///     отсутствия события
     /// </response>
+    /// <response code="409">На событии нет свободных мест</response>
     [ProducesResponseType(typeof(ApiResult<BookingInfo>), StatusCodes.Status202Accepted)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status409Conflict)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
     [HttpPost("~/events/{id:guid}/book")]
     public async Task<ActionResult<ApiResult<BookingInfo>>> CreateBooking(Guid id, CancellationToken ct)

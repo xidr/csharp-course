@@ -35,6 +35,13 @@ public record EventRequest : IValidatableObject
     public DateTime? EndAt { get; init; }
 
     /// <summary>
+    ///     Общее количество мест на мероприятии
+    /// </summary>
+    [Required(ErrorMessage = "Общее количество мест обязательно для заполнения")]
+    [Range(1, int.MaxValue, ErrorMessage = "Общее количество мест должно быть больше нуля")]
+    public int? TotalSeats { get; init; }
+
+    /// <summary>
     ///     Проверяет, что дата завершения позже даты начала
     /// </summary>
     /// <param name="validationContext">Контекст валидации</param>

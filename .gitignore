@@ -10,3 +10,4 @@ publish
 csharp-course.sln.DotSettings.user
 /.envrc
 *.DotSettings.*
+.DS_Store

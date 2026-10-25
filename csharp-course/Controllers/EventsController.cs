@@ -29,6 +29,7 @@ public class EventsController : ControllerBase
     ///     Параметры фильтрации и пагинации: название, дата начала, дата окончания,
     ///     номер страницы и её размер
     /// </param>
+    /// <param name="ct">Токен отмены</param>
     /// <response code="200">
     ///     Возвращается JSON-структура с деталями ответа
     ///     и HTTP статус-кодом 200 Ok в случае успеха
@@ -40,10 +41,12 @@ public class EventsController : ControllerBase
     [ProducesResponseType(typeof(ApiResult<PaginatedResult<EventResponse>>), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ValidationProblemDetails), StatusCodes.Status400BadRequest)]
     [HttpGet]
-    public ActionResult<ApiResult<PaginatedResult<EventResponse>>> GetAllEvents([FromQuery] EventsFilterRequest filter)
+    public async Task<ActionResult<ApiResult<PaginatedResult<EventResponse>>>> GetAllEvents(
+        [FromQuery] EventsFilterRequest filter,
+        CancellationToken ct)
     {
-        var result = _eventService.GetAllEvents(
-            filter.Title, filter.From, filter.To, filter.Page, filter.PageSize);
+        var result = await _eventService.GetAllEventsAsync(
+            filter.Title, filter.From, filter.To, filter.Page, filter.PageSize, ct);
 
         return Ok(new ApiResult<PaginatedResult<EventResponse>>
         {
@@ -59,6 +62,7 @@ public class EventsController : ControllerBase
     ///     Метод возвращает событие по идентификатору
     /// </summary>
     /// <param name="id">Идентификатор события</param>
+    /// <param name="ct">Токен отмены</param>
     /// <response code="200">
     ///     Возвращается JSON-структура ApiResult с деталями ответа
     ///     и HTTP статус-кодом 200 Ok в случае успеха
@@ -70,9 +74,9 @@ public class EventsController : ControllerBase
     [ProducesResponseType(typeof(ApiResult<EventResponse>), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
     [HttpGet("{id:guid}")]
-    public ActionResult<ApiResult<EventResponse>> GetEventById(Guid id)
+    public async Task<ActionResult<ApiResult<EventResponse>>> GetEventById(Guid id, CancellationToken ct)
     {
-        var eventToReturn = _eventService.GetEvent(id);
+        var eventToReturn = await _eventService.GetEventAsync(id, ct);
 
         return Ok(new ApiResult<EventResponse>
         {
@@ -84,6 +88,7 @@ public class EventsController : ControllerBase
     ///     Метод создает новое событие
     /// </summary>
     /// <param name="request">Данные создаваемого события</param>
+    /// <param name="ct">Токен отмены</param>
     /// <response code="201">
     ///     Возвращается JSON-структура с идентификатором созданного события
     ///     и HTTP статус-кодом 201 Created в случае успеха
@@ -95,10 +100,17 @@ public class EventsController : ControllerBase
     [ProducesResponseType(typeof(ApiResult<EventResponse>), StatusCodes.Status201Created)]
     [ProducesResponseType(typeof(ValidationProblemDetails), StatusCodes.Status400BadRequest)]
     [HttpPost]
-    public ActionResult<ApiResult<EventResponse>> Post([FromBody] EventRequest request)
+    public async Task<ActionResult<ApiResult<EventResponse>>> Post(
+        [FromBody] EventRequest request,
+        CancellationToken ct)
     {
-        var newEvent = _eventService.CreateEvent(request.Title, request.Description, request.StartAt!.Value,
-            request.EndAt!.Value);
+        var newEvent = await _eventService.CreateEventAsync(
+            request.Title,
+            request.Description,
+            request.StartAt!.Value,
+            request.EndAt!.Value,
+            request.TotalSeats!.Value,
+            ct);
 
         return CreatedAtAction(nameof(GetEventById), new { id = newEvent.Id }, new ApiResult<EventResponse>
         {
@@ -112,6 +124,7 @@ public class EventsController : ControllerBase
     /// </summary>
     /// <param name="id">Идентификатор события</param>
     /// <param name="request">Новые данные события</param>
+    /// <param name="ct">Токен отмены</param>
     /// <response code="204">
     ///     Возвращается HTTP статус-код 204 No Content в случае
     ///     успешного обновления события
@@ -128,10 +141,16 @@ public class EventsController : ControllerBase
     [ProducesResponseType(typeof(ValidationProblemDetails), StatusCodes.Status400BadRequest)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
     [HttpPut("{id:guid}")]
-    public ActionResult Put(Guid id, [FromBody] EventRequest request)
+    public async Task<ActionResult> Put(Guid id, [FromBody] EventRequest request, CancellationToken ct)
     {
-        _eventService.UpdateEvent(id, request.Title, request.Description, request.StartAt!.Value,
-            request.EndAt!.Value);
+        await _eventService.UpdateEventAsync(
+            id,
+            request.Title,
+            request.Description,
+            request.StartAt!.Value,
+            request.EndAt!.Value,
+            request.TotalSeats!.Value,
+            ct);
 
         return NoContent();
     }
@@ -140,6 +159,7 @@ public class EventsController : ControllerBase
     ///     Метод удаляет событие по идентификатору
     /// </summary>
     /// <param name="id">Идентификатор события</param>
+    /// <param name="ct">Токен отмены</param>
     /// <response code="200">
     ///     Возвращается JSON-структура с подтверждением удаления
     ///     и HTTP статус-кодом 200 OK в случае успеха
@@ -151,9 +171,9 @@ public class EventsController : ControllerBase
     [ProducesResponseType(typeof(ApiResult), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
     [HttpDelete("{id:guid}")]
-    public ActionResult<ApiResult> Delete(Guid id)
+    public async Task<ActionResult<ApiResult>> Delete(Guid id, CancellationToken ct)
     {
-        _eventService.DeleteEvent(id);
+        await _eventService.DeleteEventAsync(id, ct);
 
         return Ok(new ApiResult());
     }
